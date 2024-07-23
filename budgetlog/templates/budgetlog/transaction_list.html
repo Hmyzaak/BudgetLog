@@ -1,0 +1,15 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+    <h1>Seznam transakcí</h1>
+    <a href="{% url 'transaction-add' %}">Přidat novou transakci</a>
+    <ul>
+        {% for transaction in transactions %}
+            <li>
+                {{ transaction }} -
+                <a href="{% url 'transaction-edit' transaction.id %}">Upravit</a> -
+                <a href="{% url 'transaction-delete' transaction.id %}">Smazat</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

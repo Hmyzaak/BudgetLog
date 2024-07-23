@@ -1,0 +1,15 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+    <h1>Seznam kategorií</h1>
+    <a href="{% url 'category-add' %}">Přidat novou kategorii</a>
+    <ul>
+        {% for category in categories %}
+            <li>
+                {{ category }} -
+                <a href="{% url 'category-edit' category.id %}">Upravit</a> -
+                <a href="{% url 'category-delete' category.id %}">Smazat</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

@@ -1,0 +1,26 @@
+.bg-dark {
+    background-color: #343a40 !important; /* Použijte tmavě šedou barvu */
+    color: white; /* Bílý text */
+}
+
+main {
+    padding-bottom: 28px;
+    padding-top: 84px; /* Výchozí výška pro pevně umístěnou navbar */
+}
+
+.navbar-nav .nav-item .nav-link {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.footer {
+    text-align: center;
+    margin-top: auto;
+    background-color: #f8f9fa; /* Barva pozadí zápatí */
+}
+
+/* Styl pro text ve footeru */
+.text-muted {
+    color: #6c757d !important; /* Barva textu pro ztlumený vzhled */
+}
+

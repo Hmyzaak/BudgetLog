@@ -1,0 +1,59 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+    <h1>Detail pro {{ month }}/{{ year }}</h1>
+
+    <!-- Tabulka pro souhrn kategorií -->
+    <h2>Souhrn podle kategorií</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Kategorie</th>
+                <th>Součet</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in category_summaries %}
+                <tr>
+                    <td>{{ category.name }}</td>
+                    <td>
+                        {% if category.total > 0 %}
+                            <span class="text-success">{{ category.total }} CZK</span>
+                        {% else %}
+                            <span class="text-danger">{{ category.total }} CZK</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Seznam transakcí -->
+    <h2>Seznam transakcí</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Kategorie</th>
+                <th>Popis</th>
+                <th>Částka</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+                <tr>
+                    <td>{{ transaction.datestamp }}</td>
+                    <td>{{ transaction.category.name }}</td>
+                    <td>{{ transaction.description }}</td>
+                    <td><a href="{% url 'transaction-detail' transaction.id %}">
+                        {% if transaction.adjusted_amount < 0 %}
+                            <span class="text-danger">{{ transaction.adjusted_amount }} CZK</span>
+                        {% else %}
+                            <span class="text-success">{{ transaction.adjusted_amount }} CZK</span>
+                        {% endif %}
+                    </a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block content %}
+<h2>Souhrnné přehledy</h2>
+<h3>Měsíční přehledy</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Měsíc a Rok</th>
+            <th>Bilance</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for date, balance in month_balance.items %}
+        <tr>
+            <td>
+                <a href="{% url 'month-detail' year=date.year month=date.month %}">
+                    {{ date|date:"F Y" }}
+                </a>
+            </td>
+            <td class="{% if balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ balance|floatformat:2 }}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Roční přehledy</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Rok</th>
+            <th>Akce</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for year in years %}
+        <tr>
+            <td>{{ year.year }}</td>
+            <td>
+                <a href="{% url 'year-summary' year=year.year %}">Zobrazit transakce</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
