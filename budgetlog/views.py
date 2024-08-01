@@ -1,7 +1,7 @@
 from django.shortcuts import render
-from django.db.models import Sum, DecimalField, Q, F, Case, When, Value
+from django.db.models import Sum, DecimalField, Q, F, Case, When
 from django.db.models.functions import Coalesce
-
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from decimal import Decimal
@@ -18,6 +18,28 @@ class TransactionListView(ListView):
     context_object_name = 'transactions'
     # nastavuje název proměnné, která bude použita v šabloně pro přístup k seznamu transakcí: Výchozí název proměnné
     # by byl object_list
+    paginate_by = 100  # Počet transakcí na stránku
+    ordering = ['-datestamp']  # Řazení transakcí podle data od nejnovějších
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        queryset = self.get_queryset()
+        paginator = Paginator(queryset, self.paginate_by)
+        page = self.request.GET.get('page')
+
+        try:
+            transactions = paginator.page(page)
+        except PageNotAnInteger:
+            transactions = paginator.page(1)
+        except EmptyPage:
+            transactions = paginator.page(paginator.num_pages)
+
+        context['transactions'] = transactions
+        print("Paginator count:", transactions.paginator.count)  # Debugging output
+        print("Number of pages:", transactions.paginator.num_pages)  # Debugging output
+        print("Current page:", transactions.number)  # Debugging output
+
+        return context
 
 
 class TransactionCreateView(CreateView):

@@ -1,15 +1,50 @@
 {% extends "base_generic.html" %}
 
 {% block content %}
-    <h1>Seznam transakcí</h1>
-    <a href="{% url 'transaction-add' %}">Přidat novou transakci</a>
-    <ul>
-        {% for transaction in transactions %}
-            <li>
-                {{ transaction }} -
-                <a href="{% url 'transaction-edit' transaction.id %}">Upravit</a> -
-                <a href="{% url 'transaction-delete' transaction.id %}">Smazat</a>
+<h1>Seznam transakcí</h1>
+<a href="{% url 'transaction-add' %}" class="btn btn-primary">Přidat novou transakci</a>
+
+<ul class="list-group mt-3">
+    {% for transaction in transactions %}
+        <li class="list-group-item">
+            {{ transaction }} -
+            <a href="{% url 'transaction-edit' transaction.id %}" class="btn btn-secondary btn-sm">Upravit</a> -
+            <a href="{% url 'transaction-delete' transaction.id %}" class="btn btn-danger btn-sm">Smazat</a>
+        </li>
+    {% endfor %}
+</ul>
+
+<!-- Debugging output -->
+<p>Has previous: {{ transactions.has_previous }}</p>
+<p>Has next: {{ transactions.has_next }}</p>
+<p>Page: {{ transactions.number }} of {{ transactions.paginator.num_pages }}</p>
+<p>Total transactions: {{ transactions.paginator.count }}</p>
+
+<nav aria-label="Page navigation" class="mt-3">
+    <ul class="pagination justify-content-center">
+        {% if transactions.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">&laquo; první</a>
             </li>
-        {% endfor %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ transactions.previous_page_number }}">předchozí</a>
+            </li>
+        {% endif %}
+
+        <li class="page-item disabled">
+            <span class="page-link">
+                Strana {{ transactions.number }} z {{ transactions.paginator.num_pages }}
+            </span>
+        </li>
+
+        {% if transactions.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ transactions.next_page_number }}">další</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ transactions.paginator.num_pages }}">poslední &raquo;</a>
+            </li>
+        {% endif %}
     </ul>
+</nav>
 {% endblock %}
