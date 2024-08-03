@@ -1,49 +1,38 @@
 {% extends "base_generic.html" %}
-{% load static %}
+{% load custom_filters %}
 
 {% block content %}
-<h2>Souhrnné přehledy</h2>
-<h3>Měsíční přehledy</h3>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Měsíc a Rok</th>
-            <th>Bilance</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for date, balance in month_balance.items %}
-        <tr>
-            <td>
-                <a href="{% url 'month-detail' year=date.year month=date.month %}">
-                    {{ date|date:"F Y" }}
-                </a>
-            </td>
-            <td class="{% if balance < 0 %}text-danger{% else %}text-success{% endif %}">
-                {{ balance|floatformat:2 }}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<h1>Souhrnné přehledy</h1>
 
-<h3>Roční přehledy</h3>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Rok</th>
-            <th>Akce</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for year in years %}
-        <tr>
-            <td>{{ year.year }}</td>
-            <td>
-                Zobrazit transakce
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<!-- Seznam roků -->
+<div class="years">
+    {% for year in years %}
+        <div class="year-item mb-4">
+            <h2>{{ year.year }}</h2>
+
+            <!-- Rozbalovací menu pro jednotlivé měsíce -->
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
+                    Zobrazit jednotlivé měsíce
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ forloop.counter }}">
+                    {% for date in months_years %}
+                        {% if date.year == year.year %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'month-detail' date.year date.month %}">
+                                    {{ date.month|format_month_cs }}
+                                    <!-- přeloženo pomocí custom_filers.py -->
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Tlačítko "Zobrazit statistiku transakcí" -->
+            <button class="btn btn-primary mt-2">Zobrazit statistiku transakcí</button>
+        </div>
+    {% endfor %}
+</div>
+
 {% endblock %}
