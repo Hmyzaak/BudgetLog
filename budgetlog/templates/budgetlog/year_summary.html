@@ -1,0 +1,31 @@
+{% extends "base_generic.html" %}
+{% load custom_filters %}
+
+{% block content %}
+<h1>Statistika transakcí pro rok {{ year }}</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Kategorie</th>
+            {% for month in months %}
+                <th>{{ month }}</th>
+            {% endfor %}
+            <th>Roční součet</th>
+            <th>Průměr za měsíc</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for category in category_summaries %}
+            <tr>
+                <td>{{ category.name }}</td>
+                {% for month in months %}
+                    <td>{{ category|get_month_total:forloop.counter0 }}</td>
+                {% endfor %}
+                <td>{{ category.total }}</td>
+                <td>{{ category.average }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

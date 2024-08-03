@@ -183,3 +183,41 @@ def month_detail_view(request, year, month):
         'category_summaries': category_summaries,
     }
     return render(request, 'budgetlog/monthly_detail.html', context)
+
+
+def year_summary_view(request, year):
+    transactions = Transaction.objects.filter(datestamp__year=year).order_by('datestamp')
+
+    # Logika pro výpočet souhrnů transakcí
+    months = [
+        'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
+        'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'
+    ]
+    # Výpočet součtu transakcí pro každou kategorii a každý měsíc
+    category_summaries = Category.objects.annotate(
+        **{f'month_{month}': Coalesce(
+            Sum(
+                Case(
+                    When(transactions__type='expense', then=-F('transactions__amount')),
+                    default=F('transaction__amount'),
+                    output_field=DecimalField()
+                ),
+                filter=Q(transactions__datestamp__month=month),
+                output_field=DecimalField()
+            ),
+            Decimal('0')
+        ) for month in range(1,13)}
+    )
+
+    # Výpočet ročního součtu a průměru pro každou kategorii
+    for category in category_summaries:
+        category.total = sum(getattr(category, f'month_{month}') for month in range(1,13))
+        category.average = category.total / 12
+
+    context = {
+        'year': year,
+        'category_summaries': category_summaries,
+        'transactions': transactions,
+        'months': months,
+    }
+    return render(request, 'budgetlog/year_summary.html', context)

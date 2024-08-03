@@ -20,4 +20,5 @@ urlpatterns = [
     path('', url_handlers.index_handler),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('dashboard/month/<int:year>/<int:month>/', views.month_detail_view, name='month-detail'),
+    path('dashboard/year/<int:year>/', views.year_summary_view, name='year-summary'),
 ]

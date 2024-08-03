@@ -33,9 +33,12 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Částka",
                                  help_text="Uveď částku transakce v [CZK].")
     category = models.ForeignKey(Category, null=True, on_delete=models.SET_NULL, verbose_name="Kategorie",
-                                 help_text="Vyber kategorii pro tuto transakci.")
+                                 help_text="Vyber kategorii pro tuto transakci.",
+                                 related_name='transactions')
     """on_delete=models.SET_NULL nastaví hodnotu na NULL při smazání související kategorie, což zajistí, 
-    že transakce nebude smazána."""
+    že transakce nebude smazána.
+    related_name='transactions' umožňuje přístup k transakcím spojeným s konkrétní kategorií přes category.transactions.
+    """
     datestamp = models.DateField(default=timezone.now, verbose_name="Datum",
                                  help_text="Datum provedení transakce.")
     description = models.TextField(null=True, blank=True, verbose_name="Popis",

@@ -1,4 +1,7 @@
 from django import template
+from django.db.models import Sum, F, DecimalField, Case, When
+from django.db.models.functions import Coalesce
+from decimal import Decimal
 
 register = template.Library()
 
@@ -12,3 +15,28 @@ MONTHS_CS = {
 @register.filter(name='format_month_cs')
 def format_month_cs(month):
     return MONTHS_CS.get(month, '')
+
+
+@register.filter
+def get_month_total(category, month_index):
+    """Vrátí celkový součet transakcí za daný měsíc pro konkrétní kategorii."""
+    # Předpokládáme, že month_index je 0-based (0 pro leden, 1 pro únor, ...)
+    month = month_index + 1  # Django používá 1-based index měsíců
+
+    # Výpočet celkového součtu transakcí pro kategorii v daném měsíci
+    total = category.transactions.filter(
+        datestamp__month=month
+    ).aggregate(
+        total=Coalesce(
+            Sum(
+                Case(
+                    When(type='expense', then=-F('amount')),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            ),
+            Decimal('0')
+        )
+    )['total']
+
+    return total
