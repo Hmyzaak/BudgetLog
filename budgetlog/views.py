@@ -104,130 +104,148 @@ class CategoryDeleteView(DeleteView):
     success_url = reverse_lazy('category-list')
 
 
-def dashboard_view(request):
-    # Logika pro získání měsíců a roků s transakcemi
-    transactions = Transaction.objects.all()
-    months_years = transactions.dates('datestamp', 'month', order='DESC')
-    years = transactions.dates('datestamp', 'year', order='DESC')
+class DashboardView(TemplateView):
+    """Templát pro stránku se souhrnnými přehledy."""
+    template_name = 'budgetlog/dashboard.html'
 
-    context = {
-        'months_years': months_years,
-        'years': years,
-    }
-    return render(request, 'budgetlog/dashboard.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        transactions = Transaction.objects.all()
+        months_years = transactions.dates('datestamp', 'month', order='DESC')
+        years = transactions.dates('datestamp', 'year', order='DESC')
 
+        context.update({
+            'months_years': months_years,
+            'years': years,
+        })
 
-def month_detail_view(request, year, month):
-    transactions = Transaction.objects.filter(
-        datestamp__year=year,
-        datestamp__month=month
-    ).order_by('-datestamp')  # Seřazení dle data, nejnovější nahoře
-
-    # Výpočet součtu transakcí pro každou kategorii
-    """
-    Q je objekt v Django, který se používá k vytváření složitějších dotazů pomocí ORM (Object-Relational Mapping). 
-    Umožňuje kombinovat podmínky pomocí logických operátorů (AND, OR) a pracovat s podmínkami, které nejsou možné 
-    pomocí standardních filtrů. Je nezbytné importovat Q z django.db.models, aby bylo možné jej použít v dotazech.
-    F zase používáme pro referenci na pole modelu (transaction__amount) v agregaci při použití Case, When a then.
-    output_field=DecimalField(): Zajistí, že výstup agregace je DecimalField.
-    Decimal('0'): Výchozí hodnota jako Decimal, aby byla kompatibilní s typem amount.
-    """
-    category_summaries = Category.objects.annotate(
-        total=Coalesce(
-            Sum(
-                Case(
-                    When(transaction__type='expense', then=-F('transaction__amount')),
-                    default=F('transaction__amount'),
-                    output_field=DecimalField()
-                ),
-                filter=Q(transaction__datestamp__year=year, transaction__datestamp__month=month),
-                output_field=DecimalField()
-            ),
-            Decimal('0')  # Coalesce zajistí, že pokud není žádná transakce, použije se hodnota 0
-        )
-    ).order_by('-total')  # Seřazení podle součtu, největší nahoře
-
-    context = {
-        'year': year,
-        'month': month,
-        'transactions': transactions,
-        'category_summaries': category_summaries,
-    }
-    return render(request, 'budgetlog/monthly_detail.html', context)
+        return context
 
 
-def year_detail_view(request, year):
-    transactions = Transaction.objects.filter(datestamp__year=year).order_by('-datestamp')
-    # Výpočet celkových ročních příjmů a výdajů
-    total_income = transactions.filter(type='income').aggregate(
-        total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
-    )['total']
+class MonthDetailView(TemplateView):
+    """Templát pro detailní statistiky daného měsíce."""
+    template_name = 'budgetlog/monthly_detail.html'
 
-    total_expense = transactions.filter(type='expense').aggregate(
-        total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
-    )['total']
+    def get_context_data(self, year, month, **kwargs):
+        context = super().get_context_data(**kwargs)
+        transactions = Transaction.objects.filter(
+            datestamp__year=year,
+            datestamp__month=month
+        ).order_by('-datestamp')  # Seřazení dle data, nejnovější nahoře
 
-    total_balance = total_income - total_expense
-
-    months = transactions.dates('datestamp', 'month', order='ASC')
-
-    # Výpočet součtu transakcí pro každou kategorii
-    category_summaries = Category.objects.annotate(
-        total=Coalesce(
-            Sum(
-                Case(
-                    When(transaction__type='expense', then=-F('transaction__amount')),
-                    default=F('transaction__amount'),
-                    output_field=DecimalField()
-                ),
-                filter=Q(transaction__datestamp__year=year),
-                output_field=DecimalField()
-            ),
-            Decimal('0')
-        )
-    ).annotate(
-        monthly_average=Coalesce(
-            Sum(
-                Case(
-                    When(transaction__type='expense', then=-F('transaction__amount')),
-                    default=F('transaction__amount'),
-                    output_field=DecimalField()
-                ),
-                filter=Q(transaction__datestamp__year=year),
-                output_field=DecimalField()
-            ) / 12,
-            Decimal('0')
-        )
-    ).order_by('-total')
-
-    monthly_balances = []
-    for month in months:
-        month_balances = Category.objects.annotate(
-            monthly_total=Coalesce(
+        # Výpočet součtu transakcí pro každou kategorii
+        """
+        Q je objekt v Django, který se používá k vytváření složitějších dotazů pomocí ORM (Object-Relational Mapping). 
+        Umožňuje kombinovat podmínky pomocí logických operátorů (AND, OR) a pracovat s podmínkami, které nejsou možné 
+        pomocí standardních filtrů. Je nezbytné importovat Q z django.db.models, aby bylo možné jej použít v dotazech.
+        F zase používáme pro referenci na pole modelu (transaction__amount) v agregaci při použití Case, When a then.
+        Coalesce zajistí, že pokud není žádná transakce, použije se hodnota 0.
+        output_field=DecimalField(): Zajistí, že výstup agregace je DecimalField.
+        Decimal('0'): Výchozí hodnota jako Decimal, aby byla kompatibilní s typem amount.
+        """
+        category_summaries = Category.objects.annotate(
+            total=Coalesce(
                 Sum(
                     Case(
                         When(transaction__type='expense', then=-F('transaction__amount')),
                         default=F('transaction__amount'),
                         output_field=DecimalField()
                     ),
-                    filter=Q(transaction__datestamp__year=year, transaction__datestamp__month=month.month),
+                    filter=Q(transaction__datestamp__year=year, transaction__datestamp__month=month),
                     output_field=DecimalField()
                 ),
                 Decimal('0')
             )
-        ).order_by('-monthly_total')
-        for balance in month_balances:
-            balance.month = month
-            monthly_balances.append(balance)
+        ).order_by('-total')
 
-    context = {
-        'year': year,
-        'category_summaries': category_summaries,
-        'months': months,
-        'monthly_balances': monthly_balances,
-        'total_income': total_income,
-        'total_expense': total_expense,
-        'total_balance': total_balance,
-    }
-    return render(request, 'budgetlog/yearly_detail.html', context)
+        context.update({
+            'year': year,
+            'month': month,
+            'transactions': transactions,
+            'category_summaries': category_summaries,
+        })
+        return context
 
+
+class YearDetailView(TemplateView):
+    """Templát pro zobrazení statistik transakcí u vybraného roku."""
+    template_name = 'budgetlog/yearly_detail.html'
+
+    def get_context_data(self, year, **kwargs):
+        context = super().get_context_data(**kwargs)
+        transactions = Transaction.objects.filter(
+            datestamp__year=year
+        ).order_by('-datestamp')
+
+        # Výpočet celkových ročních příjmů a výdajů
+        total_income = transactions.filter(type='income').aggregate(
+            total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
+        )['total']
+
+        total_expense = transactions.filter(type='expense').aggregate(
+            total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
+        )['total']
+
+        total_balance = total_income - total_expense
+
+        # Výpočet součtu a průměrné hodnoty transakcí pro každou kategorii
+        months = transactions.dates('datestamp', 'month', order='ASC')
+        category_summaries = Category.objects.annotate(
+            total=Coalesce(
+                Sum(
+                    Case(
+                        When(transaction__type='expense', then=-F('transaction__amount')),
+                        default=F('transaction__amount'),
+                        output_field=DecimalField()
+                    ),
+                    filter=Q(transaction__datestamp__year=year),
+                    output_field=DecimalField()
+                ),
+                Decimal('0')
+            )
+        ).annotate(
+            monthly_average=Coalesce(
+                Sum(
+                    Case(
+                        When(transaction__type='expense', then=-F('transaction__amount')),
+                        default=F('transaction__amount'),
+                        output_field=DecimalField()
+                    ),
+                    filter=Q(transaction__datestamp__year=year),
+                    output_field=DecimalField()
+                ) / 12,  # Využití hodnoty 12 pro výpočet průměrné hodnoty, ale neuvažuje se zde, že v aktuálně probíhajícím roce, pro který se také používá tento výpočet, ještě nemusí být všech 12 měsíců, tzn. vypočtená hodnota tedy bude výrazně nižší než by měla reálně být
+                Decimal('0')
+            )
+        ).order_by('-total')
+
+        # Výpočet bilance pro každou kategorii každého měsíce v daném roce
+        monthly_balances = []
+        for month in months:
+            month_balances = Category.objects.annotate(
+                monthly_total=Coalesce(
+                    Sum(
+                        Case(
+                            When(transaction__type='expense', then=-F('transaction__amount')),
+                            default=F('transaction__amount'),
+                            output_field=DecimalField()
+                        ),
+                        filter=Q(transaction__datestamp__year=year, transaction__datestamp__month=month.month),
+                        output_field=DecimalField()
+                    ),
+                    Decimal('0')
+                )
+            ).order_by('-monthly_total')
+            for balance in month_balances:
+                balance.month = month
+                monthly_balances.append(balance)
+
+        context.update({
+            'year': year,
+            'category_summaries': category_summaries,
+            'months': months,
+            'monthly_balances': monthly_balances,
+            'total_income': total_income,
+            'total_expense': total_expense,
+            'total_balance': total_balance,
+        })
+        return context

@@ -18,7 +18,7 @@ urlpatterns = [
     path('categories/edit/<int:pk>/', views.CategoryUpdateView.as_view(), name='category-edit'),
     path('categories/delete/<int:pk>/', views.CategoryDeleteView.as_view(), name='category-delete'),
     path('', url_handlers.index_handler),
-    path('dashboard/', views.dashboard_view, name='dashboard'),
-    path('dashboard/month/<int:year>/<int:month>/', views.month_detail_view, name='month-detail'),
-    path('dashboard/year/<int:year>/', views.year_detail_view, name='year-detail'),
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
+    path('dashboard/month/<int:year>/<int:month>/', views.MonthDetailView.as_view(), name='month-detail'),
+    path('dashboard/year/<int:year>/', views.YearDetailView.as_view(), name='year-detail'),
 ]
