@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from django.db.models import Sum, DecimalField, Q, F, Case, When
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
@@ -7,6 +6,10 @@ from django.urls import reverse_lazy
 from decimal import Decimal
 from .models import Transaction, Category
 from .forms import TransactionForm, CategoryForm
+
+import json
+import random
+from django.utils.dateformat import format
 
 
 # Create your views here.
@@ -219,7 +222,7 @@ class YearDetailView(TemplateView):
         ).order_by('-total')
 
         # Výpočet bilance pro každou kategorii každého měsíce v daném roce
-        monthly_balances = []
+        monthly_balances = {category.name: {} for category in category_summaries}
         for month in months:
             month_balances = Category.objects.annotate(
                 monthly_total=Coalesce(
@@ -235,9 +238,26 @@ class YearDetailView(TemplateView):
                     Decimal('0')
                 )
             ).order_by('-monthly_total')
+
             for balance in month_balances:
-                balance.month = month
-                monthly_balances.append(balance)
+                monthly_balances[balance.name][month] = float(balance.monthly_total)  # Konverze Decimal na float (kvůli JSON serializaci)
+
+        # Generování JSON dat pro graf
+        category_data = []
+        for category in category_summaries:
+            color = '#' + ''.join([random.choice('0123456789ABCDEF') for _ in range(6)])
+            category_data.append({
+                'name': category.name,
+                'color': color
+            })
+        monthly_data = {}
+        for category in category_summaries:
+            monthly_data[category.name] = [monthly_balances[category.name].get(month, 0) for month in months]
+
+        # Konverze Decimal na float (kvůli JSON serializaci)
+        total_income = float(total_income)
+        total_expense = float(total_expense)
+        total_balance = float(total_balance)
 
         context.update({
             'year': year,
@@ -247,5 +267,8 @@ class YearDetailView(TemplateView):
             'total_income': total_income,
             'total_expense': total_expense,
             'total_balance': total_balance,
+            'categories_json': json.dumps(category_data),
+            'months_json': json.dumps([format(month, 'F') for month in months]),
+            'monthly_data_json': json.dumps(monthly_data),
         })
         return context

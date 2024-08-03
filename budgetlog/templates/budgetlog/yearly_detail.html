@@ -42,9 +42,7 @@
             <th>Kategorie</th>
             <th>Celková roční bilance</th>
             <th>Průměrná měsíční bilance</th>
-            {% for month in months %}
-                <th>{{ month|date:"F" }}</th>
-            {% endfor %}
+
         </tr>
     </thead>
     <tbody>
@@ -65,21 +63,78 @@
                         <span class="text-danger">{{ category.monthly_average|floatformat:2 }} CZK</span>
                     {% endif %}
                 </td>
-                <!-- Blok pro zobrazení měsíčních bilancí -->
-                {% for month in months %}
-                    {% with monthly_balances|dictsort:"month" as monthly_balance %}
-                        {% for mb in monthly_balance %}
-                            {% if mb.id == category.id and mb.month == month %}
-                                <td>{{ mb.monthly_total|floatformat:2 }}</td>
-                            {% endif %}
-                        {% endfor %}
-                    {% endwith %}
-                {% endfor %}
-                <!-- Konec bloku pro měsíční bilance -->
+
             </tr>
         {% endfor %}
     </tbody>
 </table>
 
 <a href="{% url 'dashboard' %}" class="btn btn-primary">Zpět na dashboard</a>
+
+<div>
+    <h2>Graf bilancí podle kategorií</h2>
+    <canvas id="transactionsChart" width="400" height="200"></canvas>
+    <div>
+        {% for category in categories %}
+            <input type="checkbox" id="category_{{ category.id }}" name="categories" value="{{ category.name }}" checked>
+            <label for="category_{{ category.id }}">{{ category.name }}</label>
+        {% endfor %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('transactionsChart').getContext('2d');
+        const categories = JSON.parse('{{ categories_json|escapejs }}');
+        const months = JSON.parse('{{ months_json|escapejs }}');
+        const monthlyData = JSON.parse('{{ monthly_data_json|escapejs }}');
+
+        const chartData = {
+            labels: months,
+            datasets: categories.map(category => ({
+                label: category.name,
+                data: monthlyData[category.name],
+                backgroundColor: category.color,
+            }))
+        };
+
+        const transactionsChart = new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Měsíce'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Bilance transakcí'
+                        }
+                    }
+                }
+            }
+        });
+
+        document.querySelectorAll('input[name="categories"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                const selectedCategories = Array.from(document.querySelectorAll('input[name="categories"]:checked'))
+                    .map(cb => cb.value);
+                transactionsChart.data.datasets = categories
+                    .filter(category => selectedCategories.includes(category.name))
+                    .map(category => ({
+                        label: category.name,
+                        data: monthlyData[category.name],
+                        backgroundColor: category.color,
+                    }));
+                transactionsChart.update();
+            });
+        });
+    });
+</script>
+
 {% endblock %}
