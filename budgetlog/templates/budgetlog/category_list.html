@@ -2,14 +2,15 @@
 
 {% block content %}
     <h1>Seznam kategorií</h1>
-    <a href="{% url 'category-add' %}">Přidat novou kategorii</a>
-    <ul>
-        {% for category in categories %}
-            <li>
-                {{ category }} -
-                <a href="{% url 'category-edit' category.id %}">Upravit</a> -
-                <a href="{% url 'category-delete' category.id %}">Smazat</a>
-            </li>
-        {% endfor %}
+    <a href="{% url 'category-add' %}" class="btn btn-primary">Přidat novou kategorii</a>
+
+    <ul class="list-group mt-3">
+    {% for category in categories %}
+        <li class="list-group-item">
+            {{ category.name }} -
+            <a href="{% url 'category-edit' category.id %}" class="btn btn-secondary btn-sm">Upravit</a> -
+            <a href="{% url 'category-delete' category.id %}" class="btn btn-danger btn-sm">Smazat</a>
+        </li>
+    {% endfor %}
     </ul>
 {% endblock %}

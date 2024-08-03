@@ -18,7 +18,7 @@ class TransactionListView(ListView):
     context_object_name = 'transactions'
     # nastavuje název proměnné, která bude použita v šabloně pro přístup k seznamu transakcí: Výchozí název proměnné
     # by byl object_list
-    paginate_by = 100  # Počet transakcí na stránku
+    paginate_by = 30  # Počet transakcí na stránku
     ordering = ['-datestamp']  # Řazení transakcí podle data od nejnovějších
 
     def get_context_data(self, **kwargs):
@@ -78,6 +78,7 @@ class CategoryListView(ListView):
     model = Category
     template_name = 'budgetlog/category_list.html'
     context_object_name = 'categories'
+    ordering = ['name']  # Řazení dle atributu name v modelu Category
 
 
 class CategoryCreateView(CreateView):

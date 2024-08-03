@@ -17,7 +17,7 @@
                 <tr>
                     <td>{{ category.name }}</td>
                     <td>
-                        {% if category.total > 0 %}
+                        {% if category.total > 0 %}  <!-- Obarvení částky příjem vs výdaj -->
                             <span class="text-success">{{ category.total }} CZK</span>
                         {% else %}
                             <span class="text-danger">{{ category.total }} CZK</span>

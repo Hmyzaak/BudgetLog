@@ -14,14 +14,16 @@
     {% endfor %}
 </ul>
 
-<!-- Debugging output -->
-<p>Has previous: {{ transactions.has_previous }}</p>
-<p>Has next: {{ transactions.has_next }}</p>
-<p>Page: {{ transactions.number }} of {{ transactions.paginator.num_pages }}</p>
-<p>Total transactions: {{ transactions.paginator.count }}</p>
+<!-- Debugging output
+<p>Má předchozí: {{ transactions.has_previous }}</p>
+<p>Má následující: {{ transactions.has_next }}</p>
+<p>Stránka: {{ transactions.number }} ze {{ transactions.paginator.num_pages }}</p>
+<p>Celkem transakcí: {{ transactions.paginator.count }}</p>
+ -->
 
 <nav aria-label="Page navigation" class="mt-3">
     <ul class="pagination justify-content-center">
+        <!-- Odkazy na první a předchozí stránku -->
         {% if transactions.has_previous %}
             <li class="page-item">
                 <a class="page-link" href="?page=1">&laquo; první</a>
@@ -31,12 +33,22 @@
             </li>
         {% endif %}
 
-        <li class="page-item disabled">
-            <span class="page-link">
-                Strana {{ transactions.number }} z {{ transactions.paginator.num_pages }}
-            </span>
-        </li>
+        <!-- Číselné odkazy na jednotlivé stránky -->
+        {% for page_num in transactions.paginator.page_range %}
+            {% if transactions.number == page_num %}
+            <!-- Pokud je stránka stejná jako "page_num", zobrazí se stránka jako aktivní -->
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+            {% elif page_num > transactions.number|add:'-3' and page_num < transactions.number|add:'3' %}
+            <!-- Zobrazení čísel stránek pouze v blízkosti aktuální stránky (3 stránky před a 3 stránky po aktuální stránce) -->
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
 
+        <!-- Odkazy na následující a poslední stránku -->
         {% if transactions.has_next %}
             <li class="page-item">
                 <a class="page-link" href="?page={{ transactions.next_page_number }}">další</a>
