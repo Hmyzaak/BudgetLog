@@ -5,7 +5,7 @@
 
     <!-- Tabulka pro souhrn kategorií -->
     <h2>Souhrn podle kategorií</h2>
-    <table class="table table-bordered">
+    <table class="table table-striped">
         <thead>
             <tr>
                 <th>Kategorie</th>
@@ -18,15 +18,17 @@
                     <td>{{ category.name }}</td>
                     <td>
                         {% if category.total > 0 %}  <!-- Obarvení částky příjem vs výdaj -->
-                            <span class="text-success">{{ category.total }} CZK</span>
+                            <span class="text-success">{{ category.total|floatformat:2 }} CZK</span>
                         {% else %}
-                            <span class="text-danger">{{ category.total }} CZK</span>
+                            <span class="text-danger">{{ category.total|floatformat:2 }} CZK</span>
                         {% endif %}
                     </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
+
+<a href="{% url 'dashboard' %}" class="btn btn-primary">Zpět na dashboard</a>
 
     <!-- Seznam transakcí -->
     <h2>Seznam transakcí</h2>

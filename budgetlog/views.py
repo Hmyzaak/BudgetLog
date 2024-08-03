@@ -183,3 +183,45 @@ def month_detail_view(request, year, month):
         'category_summaries': category_summaries,
     }
     return render(request, 'budgetlog/monthly_detail.html', context)
+
+
+def year_detail_view(request, year):
+    transactions = Transaction.objects.filter(
+        datestamp__year=year
+    ).order_by('-datestamp')
+
+    # Výpočet součtu transakcí pro každou kategorii
+    category_summaries = Category.objects.annotate(
+        total=Coalesce(
+            Sum(
+                Case(
+                    When(transaction__type='expense', then=-F('transaction__amount')),
+                    default=F('transaction__amount'),
+                    output_field=DecimalField()
+                ),
+                filter=Q(transaction__datestamp__year=year),
+                output_field=DecimalField()
+            ),
+            Decimal('0')
+        )
+    ).annotate(
+        monthly_average=Coalesce(
+            Sum(
+                Case(
+                    When(transaction__type='expense', then=-F('transaction__amount')),
+                    default=F('transaction__amount'),
+                    output_field=DecimalField()
+                ),
+                filter=Q(transaction__datestamp__year=year),
+                output_field=DecimalField()
+            ) / 12,
+            Decimal('0')
+        )
+    ).order_by('-total')
+
+    context = {
+        'year': year,
+        'category_summaries': category_summaries,
+    }
+    return render(request, 'budgetlog/yearly_detail.html', context)
+

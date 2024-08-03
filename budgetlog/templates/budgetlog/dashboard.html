@@ -30,7 +30,7 @@
             </div>
 
             <!-- Tlačítko "Zobrazit statistiku transakcí" -->
-            <button class="btn btn-primary mt-2">Zobrazit statistiku transakcí</button>
+            <a href="{% url 'year-detail' year.year %}" class="btn btn-primary mt-2">Zobrazit roční statistiku transakcí</a>
         </div>
     {% endfor %}
 </div>

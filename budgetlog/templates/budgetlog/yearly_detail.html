@@ -1,0 +1,38 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Roční souhrn za {{ year }}</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Kategorie</th>
+            <th>Celková roční bilance</th>
+            <th>Průměrná měsíční bilance</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for category in category_summaries %}
+            <tr>
+                <td>{{ category.name }}</td>
+                <td>
+                    {% if category.total > 0 %}  <!-- Obarvení částky příjem vs výdaj -->
+                        <span class="text-success">{{ category.total|floatformat:2 }} CZK</span>
+                    {% else %}
+                        <span class="text-danger">{{ category.total|floatformat:2 }} CZK</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if category.monthly_average > 0 %}  <!-- Obarvení částky příjem vs výdaj -->
+                        <span class="text-success">{{ category.monthly_average|floatformat:2 }} CZK</span>
+                    {% else %}
+                        <span class="text-danger">{{ category.monthly_average|floatformat:2 }} CZK</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'dashboard' %}" class="btn btn-primary">Zpět na dashboard</a>
+{% endblock %}
