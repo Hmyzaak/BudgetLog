@@ -90,8 +90,29 @@
         const months = JSON.parse('{{ months_json|escapejs }}');
         const monthlyData = JSON.parse('{{ monthly_data_json|escapejs }}');
 
+        // Mapping English month names to Czech
+        const monthNames = {
+            'January': 'Leden',
+            'February': 'Únor',
+            'March': 'Březen',
+            'April': 'Duben',
+            'May': 'Květen',
+            'June': 'Červen',
+            'July': 'Červenec',
+            'August': 'Srpen',
+            'September': 'Září',
+            'October': 'Říjen',
+            'November': 'Listopad',
+            'December': 'Prosinec'
+        };
+
+        // Function to translate months to Czech
+        function translateMonths(months) {
+            return months.map(month => monthNames[month] || month);
+        }
+
         const chartData = {
-            labels: months,
+            labels: translateMonths(months),  // Translate month names to Czech
             datasets: categories.map(category => ({
                 label: category.name,
                 data: monthlyData[category.name],
