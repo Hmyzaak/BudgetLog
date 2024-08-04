@@ -24,3 +24,6 @@ main {
     color: #6c757d !important; /* Barva textu pro ztlumený vzhled */
 }
 
+.clickable-row {
+    cursor: pointer;
+}

@@ -69,7 +69,7 @@
     </tbody>
 </table>
 
-<a href="{% url 'dashboard' %}" class="btn btn-primary">Zpět na dashboard</a>
+<a href="{% url 'dashboard' %}" class="btn btn-primary">Zpět na Souhrn</a>
 
 <div>
     <h2>Graf bilancí podle kategorií</h2>
@@ -82,7 +82,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Později převést do složky static a provázat se šablonami -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const ctx = document.getElementById('transactionsChart').getContext('2d');
