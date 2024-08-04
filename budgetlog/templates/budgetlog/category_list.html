@@ -1,16 +1,29 @@
 {% extends "base_generic.html" %}
 
 {% block content %}
-    <h1>Seznam kategorií</h1>
+<h1>Seznam kategorií</h1>
+<div class="d-grid gap-2 d-md-block">
     <a href="{% url 'category-add' %}" class="btn btn-primary">Přidat novou kategorii</a>
+</div>
 
-    <ul class="list-group mt-3">
-    {% for category in categories %}
-        <li class="list-group-item">
-            {{ category.name }} -
-            <a href="{% url 'category-edit' category.id %}" class="btn btn-secondary btn-sm">Upravit</a> -
-            <a href="{% url 'category-delete' category.id %}" class="btn btn-danger btn-sm">Smazat</a>
-        </li>
-    {% endfor %}
-    </ul>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Kategorie</th>
+            <th>Akce</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for category in categories %}
+            <tr>
+                <td>{{ category.name }}</td>
+                <td>
+                    <a href="{% url 'category-edit' category.id %}" class="btn btn-secondary btn-sm">Upravit</a>
+                    <a href="{% url 'category-delete' category.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
 {% endblock %}
