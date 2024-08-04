@@ -1,5 +1,5 @@
 from django import forms
-from .models import Transaction, Category
+from .models import Transaction, Category, Account
 
 
 class TransactionForm(forms.ModelForm):
@@ -8,7 +8,7 @@ class TransactionForm(forms.ModelForm):
     class Meta:
         model = Transaction
         # Odkazuje na model, pro který formulář vytváříme
-        fields = ['amount', 'category', 'datestamp', 'description', 'person', 'type']
+        fields = ['amount', 'category', 'datestamp', 'description', 'account', 'type']
         # Pole zahrnuta ve formuláři
         widgets = {'datestamp': forms.DateInput(attrs={'type': 'date'}),
                    'description': forms.Textarea(attrs={'rows': 1})
@@ -26,3 +26,11 @@ class CategoryForm(forms.ModelForm):
         fields = ['name', 'description']
         widgets = {'description': forms.Textarea(attrs={'rows': 1})}
 
+
+class AccountForm(forms.ModelForm):
+    """Formulář pro přidání a úpravu účtů pro transakce."""
+
+    class Meta:
+        model = Account
+        fields = ['name', 'description']
+        widgets = {'description': forms.Textarea(attrs={'rows': 1})}

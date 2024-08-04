@@ -4,14 +4,25 @@ from decimal import Decimal
 
 
 # Create your models here.
+class Account(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name="Jméno účtu",
+                            help_text="Uveď jméno či označení účtu")
+    description = models.TextField(null=True, blank=True, verbose_name="Popis účtu",
+                                   help_text="Detailnější popis účtu (volitelný)")
+    """null=True umožňuje, aby pole mohlo být v databázi prázdné, a blank=True umožňuje, aby pole mohlo být ponecháno 
+    prázdné ve formulářích."""
+
+    def __str__(self):
+        """Textová reprezentace modelu Account"""
+        return self.name
+
+
 class Category(models.Model):
     """Model pro kategorizaci transakcí."""
     name = models.CharField(max_length=200, unique=True, verbose_name="Název",
                             help_text="Uveď název kategorie pro transakce (např. potraviny, doprava, zábava)")
     description = models.TextField(null=True, blank=True, verbose_name="Popis",
                                    help_text="Detailnější popis kategorie pro transakce (volitelný)")
-    """null=True umožňuje, aby pole mohlo být v databázi prázdné, a blank=True umožňuje, aby pole mohlo být ponecháno 
-        prázdné ve formulářích."""
 
     def __str__(self):
         """Textová reprezentace modelu Category."""
@@ -23,10 +34,6 @@ class Transaction(models.Model):
     TYPE_CHOICES = (
         ('income', 'Příjem'),
         ('expense', 'Výdaj')
-    )
-    PERSON_CHOICES = (
-        ('kuba', 'Kuba'),
-        ('romca', 'Romča')
     )
     # Definuje tuple pro typ transakce, který voláme níže
 
@@ -40,8 +47,8 @@ class Transaction(models.Model):
                                  help_text="Datum provedení transakce.")
     description = models.TextField(null=True, blank=True, verbose_name="Popis",
                                    help_text="Detailnější popis transakce (volitelný).")
-    person = models.CharField(max_length=10, choices=PERSON_CHOICES, verbose_name="Osoba",
-                              help_text="Kdo transakci prováděl?")
+    account = models.ForeignKey(Account, null=True, on_delete=models.SET_NULL, verbose_name="Účet",
+                                related_name='transactions', help_text="Vyber účet pro tuto transakci.")
     type = models.CharField(max_length=7, choices=TYPE_CHOICES, default='expense', verbose_name="Typ",
                             help_text="Je tato transakce výdaj nebo příjem?")
 

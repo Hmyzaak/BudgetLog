@@ -4,8 +4,8 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from decimal import Decimal
-from .models import Transaction, Category
-from .forms import TransactionForm, CategoryForm
+from .models import Transaction, Category, Account
+from .forms import TransactionForm, CategoryForm, AccountForm
 
 import json
 import random
@@ -105,6 +105,37 @@ class CategoryDeleteView(DeleteView):
     model = Category
     template_name = 'budgetlog/category_confirm_delete.html'
     success_url = reverse_lazy('category-list')
+
+
+class AccountListView(ListView):
+    """Zobrazí seznam všech účtů."""
+    model = Account
+    template_name = 'budgetlog/account_list.html'
+    context_object_name = 'accounts'
+    ordering = ['name']  # Řazení dle atributu name v modelu Account
+
+
+class AccountCreateView(CreateView):
+    """Umožní uživateli vytvořit nový účet."""
+    model = Account
+    form_class = AccountForm
+    template_name = 'budgetlog/account_form.html'
+    success_url = reverse_lazy('account-list')
+
+
+class AccountUpdateView(UpdateView):
+    """Umožní uživateli upravit existující účet."""
+    model = Account
+    form_class = AccountForm
+    template_name = 'budgetlog/account_form.html'
+    success_url = reverse_lazy('account-list')
+
+
+class AccountDeleteView(DeleteView):
+    """Umožní uživateli smazat účet."""
+    model = Account
+    template_name = 'budgetlog/account_confirm_delete.html'
+    success_url = reverse_lazy('account-list')
 
 
 class DashboardView(TemplateView):

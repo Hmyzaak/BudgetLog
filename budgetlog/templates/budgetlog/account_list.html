@@ -1,0 +1,16 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+    <h1>Seznam účtů</h1>
+    <a href="{% url 'account-add' %}" class="btn btn-primary">Přidat nový účet</a>
+
+    <ul class="list-group mt-3">
+    {% for account in accounts %}
+        <li class="list-group-item">
+            {{ account.name }} -
+            <a href="{% url 'account-edit' account.id %}" class="btn btn-secondary btn-sm">Upravit</a> -
+            <a href="{% url 'account-delete' account.id %}" class="btn btn-danger btn-sm">Smazat</a>
+        </li>
+    {% endfor %}
+    </ul>
+{% endblock %}

@@ -12,7 +12,7 @@
         {% endif %}
     </p>
     <p><strong>Popis:</strong> {{ transaction.description }}</p>
-    <p><strong>Plátce:</strong> {{ transaction.person }}</p>
+    <p><strong>Plátce:</strong> {{ transaction.account.name }}</p>
     <p><strong>Akce:</strong>
         <a href="{% url 'transaction-edit' transaction.id %}" class="btn btn-secondary btn-sm">Upravit</a>
         <a href="{% url 'transaction-delete' transaction.id %}" class="btn btn-danger btn-sm">Smazat</a>
