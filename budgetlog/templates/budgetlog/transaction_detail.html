@@ -2,9 +2,8 @@
 
 {% block content %}
     <h1>Detail transakce</h1>
-    <p><strong>Datum:</strong> {{ transaction.datestamp }}</p>
+    <p><strong>Datum:</strong> {{ transaction.datestamp|date:"Y-m-d" }}</p>
     <p><strong>Kategorie:</strong> {{ transaction.category.name }}</p>
-    <p><strong>Popis:</strong> {{ transaction.description }}</p>
     <p><strong>Částka:</strong> 
         {% if transaction.adjusted_amount < 0 %}
             <span class="text-danger">-{{ transaction.amount }} CZK</span>
@@ -12,5 +11,11 @@
             <span class="text-success">{{ transaction.amount }} CZK</span>
         {% endif %}
     </p>
-    <!-- Přidat další informace nebo akce, například tlačítka pro úpravy nebo smazání -->
+    <p><strong>Popis:</strong> {{ transaction.description }}</p>
+    <p><strong>Plátce:</strong> {{ transaction.account.name }}</p>
+    <p><strong>Akce:</strong>
+        <a href="{% url 'transaction-edit' transaction.id %}" class="btn btn-secondary btn-sm">Upravit</a>
+        <a href="{% url 'transaction-delete' transaction.id %}" class="btn btn-danger btn-sm">Smazat</a>
+    </p>
+        <!-- Přidat další informace nebo akce, například tlačítka pro úpravy nebo smazání -->
 {% endblock %}

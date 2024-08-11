@@ -1,0 +1,11 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+    <h1>Smazat účet</h1>
+    <p>Opravdu chcete smazat tento účet?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Ano, smazat</button>
+    </form>
+    <a href="{% url 'account-list' %}">Ne, vrátit se zpět</a>
+{% endblock %}

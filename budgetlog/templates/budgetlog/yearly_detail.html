@@ -1,0 +1,165 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Roční souhrn za {{ year }}</h1>
+
+<div class="d-grid gap-2 d-md-flex justify-content-md-end">
+    <a href="{% url 'dashboard' %}" class="btn btn-primary">Zpět na Souhrnné přehledy</a>
+</div>
+<br>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Celkové roční příjmy</h5>
+                <p class="card-text text-success">{{ total_income|floatformat:2 }} CZK</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Celkové roční výdaje</h5>
+                <p class="card-text text-danger">{{ total_expense|floatformat:2 }} CZK</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Celková roční bilance</h5>
+                <p class="card-text">
+                    {% if total_balance > 0 %}  <!-- Obarvení částky příjem vs výdaj -->
+                        <span class="text-success">{{ total_balance|floatformat:2 }} CZK</span>
+                    {% else %}
+                        <span class="text-danger">{{ total_balance|floatformat:2 }} CZK</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2>Bilance podle kategorií</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Kategorie</th>
+            <th>Celková roční bilance</th>
+            <th>Průměrná měsíční bilance</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        {% for category in category_summaries %}
+            <tr>
+                <td>{{ category.name }}</td>
+                <td>
+                    {% if category.total > 0 %}  <!-- Obarvení částky příjem vs výdaj -->
+                        <span class="text-success">{{ category.total|floatformat:2 }} CZK</span>
+                    {% else %}
+                        <span class="text-danger">{{ category.total|floatformat:2 }} CZK</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if category.monthly_average > 0 %}  <!-- Obarvení částky příjem vs výdaj -->
+                        <span class="text-success">{{ category.monthly_average|floatformat:2 }} CZK</span>
+                    {% else %}
+                        <span class="text-danger">{{ category.monthly_average|floatformat:2 }} CZK</span>
+                    {% endif %}
+                </td>
+
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div>
+    <h2>Graf bilancí podle kategorií</h2>
+    <canvas id="transactionsChart" width="400" height="200"></canvas>
+    <div>
+        {% for category in categories %}
+            <input type="checkbox" id="category_{{ category.id }}" name="categories" value="{{ category.name }}" checked>
+            <label for="category_{{ category.id }}">{{ category.name }}</label>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Později převést do složky static a provázat se šablonami -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('transactionsChart').getContext('2d');
+        const categories = JSON.parse('{{ categories_json|escapejs }}');
+        const months = JSON.parse('{{ months_json|escapejs }}');
+        const monthlyData = JSON.parse('{{ monthly_data_json|escapejs }}');
+
+        // Mapping English month names to Czech
+        const monthNames = {
+            'January': 'Leden',
+            'February': 'Únor',
+            'March': 'Březen',
+            'April': 'Duben',
+            'May': 'Květen',
+            'June': 'Červen',
+            'July': 'Červenec',
+            'August': 'Srpen',
+            'September': 'Září',
+            'October': 'Říjen',
+            'November': 'Listopad',
+            'December': 'Prosinec'
+        };
+
+        // Function to translate months to Czech
+        function translateMonths(months) {
+            return months.map(month => monthNames[month] || month);
+        }
+
+        const chartData = {
+            labels: translateMonths(months),  // Translate month names to Czech
+            datasets: categories.map(category => ({
+                label: category.name,
+                data: monthlyData[category.name],
+                backgroundColor: category.color,
+            }))
+        };
+
+        const transactionsChart = new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Měsíce'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Bilance transakcí'
+                        }
+                    }
+                }
+            }
+        });
+
+        document.querySelectorAll('input[name="categories"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                const selectedCategories = Array.from(document.querySelectorAll('input[name="categories"]:checked'))
+                    .map(cb => cb.value);
+                transactionsChart.data.datasets = categories
+                    .filter(category => selectedCategories.includes(category.name))
+                    .map(category => ({
+                        label: category.name,
+                        data: monthlyData[category.name],
+                        backgroundColor: category.color,
+                    }));
+                transactionsChart.update();
+            });
+        });
+    });
+</script>
+
+{% endblock %}
