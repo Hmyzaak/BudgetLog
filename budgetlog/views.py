@@ -3,8 +3,10 @@ from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
+from django_filters.views import FilterView
 from decimal import Decimal
 from .models import Transaction, Category, Account
+from .filters import TransactionFilter
 from .forms import TransactionForm, CategoryForm, AccountForm
 
 import json
@@ -14,9 +16,10 @@ from django.utils.dateformat import format
 
 # Create your views here.
 # Všechny třídy dědí z generických View podle toho, co s daným modelem mají dělat.
-class TransactionListView(ListView):
-    """Zobrazí seznam všech transakcí."""
+class TransactionListView(FilterView, ListView):
+    """Umožňuje vytvořit a držet data pro filtrování v seznamu transakcí a umožňuje stránkování v těchto seznamech"""
     model = Transaction
+    filterset_class = TransactionFilter
     template_name = 'budgetlog/transaction_list.html'
     context_object_name = 'transactions'
     # nastavuje název proměnné, která bude použita v šabloně pro přístup k seznamu transakcí: Výchozí název proměnné
@@ -26,8 +29,11 @@ class TransactionListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        queryset = self.get_queryset()
-        paginator = Paginator(queryset, self.paginate_by)
+        filterset = self.filterset_class(self.request.GET, queryset=self.get_queryset())
+        context['filter'] = filterset
+        filtered_qs = filterset.qs
+
+        paginator = Paginator(filtered_qs, self.paginate_by)
         page = self.request.GET.get('page')
 
         try:
@@ -38,11 +44,12 @@ class TransactionListView(ListView):
             transactions = paginator.page(paginator.num_pages)
 
         context['transactions'] = transactions
-        print("Paginator count:", transactions.paginator.count)  # Debugging output
-        print("Number of pages:", transactions.paginator.num_pages)  # Debugging output
-        print("Current page:", transactions.number)  # Debugging output
-
         return context
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        filterset = self.filterset_class(self.request.GET, queryset=queryset)
+        return filterset.qs
 
 
 class TransactionCreateView(CreateView):

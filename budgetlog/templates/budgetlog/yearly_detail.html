@@ -3,6 +3,11 @@
 {% block content %}
 <h1>Roční souhrn za {{ year }}</h1>
 
+<div class="d-grid gap-2 d-md-flex justify-content-md-end">
+    <a href="{% url 'dashboard' %}" class="btn btn-primary">Zpět na Souhrnné přehledy</a>
+</div>
+<br>
+
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card">
@@ -35,12 +40,6 @@
         </div>
     </div>
 </div>
-
-<div class="d-grid gap-2 d-md-flex justify-content-md-end">
-    <a href="{% url 'dashboard' %}" class="btn btn-primary">Zpět na Souhrnné přehledy</a>
-</div>
-
-<br>
 
 <h2>Bilance podle kategorií</h2>
 <table class="table table-striped">
