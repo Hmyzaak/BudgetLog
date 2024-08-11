@@ -1,4 +1,4 @@
-from django.db.models import Sum, DecimalField, Q, F, Case, When
+from django.db.models import Sum, DecimalField, Q, F, Case, When, Max
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
@@ -31,6 +31,7 @@ class TransactionListView(FilterView, ListView):
         context = super().get_context_data(**kwargs)
         filterset = self.filterset_class(self.request.GET, queryset=self.get_queryset())
         context['filter'] = filterset
+
         filtered_qs = filterset.qs
 
         paginator = Paginator(filtered_qs, self.paginate_by)
@@ -44,6 +45,18 @@ class TransactionListView(FilterView, ListView):
             transactions = paginator.page(paginator.num_pages)
 
         context['transactions'] = transactions
+
+        # Přidání maximální částky do kontextu
+        max_amount = Transaction.objects.aggregate(Max('amount'))['amount__max']
+        context['max_amount'] = max_amount
+
+        # Načtení aktuálních hodnot z GET parametrů, pokud jsou k dispozici
+        min_amount = self.request.GET.get('amount_min', 0)
+        max_amount = self.request.GET.get('amount_max', max_amount)
+
+        context['amount_min'] = min_amount
+        context['amount_max'] = max_amount
+
         return context
 
     def get_queryset(self):

@@ -6,13 +6,8 @@ from .models import Transaction, Category, Account
 
 class TransactionFilter(django_filters.FilterSet):
     # Částka s rozsahem
-    amount = django_filters.RangeFilter(
-        field_name='amount',
-        label='Částka (od-do)',
-        widget=django_filters.widgets.RangeWidget(
-            attrs={'class': 'form-control form-control-range'}
-        )
-    )
+    amount_min = django_filters.NumberFilter(field_name='amount', lookup_expr='gte')
+    amount_max = django_filters.NumberFilter(field_name='amount', lookup_expr='lte')
 
     # Typ transakce (příjem/výdaj)
     type = django_filters.ChoiceFilter(
@@ -52,5 +47,5 @@ class TransactionFilter(django_filters.FilterSet):
 
     class Meta:
         model = Transaction
-        fields = ['amount', 'type', 'datestamp', 'category', 'account', 'description']
+        fields = ['amount_min', 'amount_max', 'type', 'datestamp', 'category', 'account', 'description']
 

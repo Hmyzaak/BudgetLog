@@ -1,0 +1,9 @@
+/* Skryjeme tooltip na začátku */
+.hidden-tooltip {
+    visibility: hidden;
+}
+
+/* Změníme barvu vybraného rozsahu na slideru */
+.noUi-connect {
+    background-color: #0dcaf0;  /* Barva odpovídající btn-info Bootstrap 5.3 */
+}

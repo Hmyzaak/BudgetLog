@@ -25,7 +25,10 @@
         </div>
         <div class="col-md-4">
             <label for="id_amount" class="form-label">Částka (od-do)</label>
-            {{ filter.form.amount }}
+            <div id="amount-range-slider" data-max-amount="{{ max_amount }}" data-current-min="{{ amount_min }}"
+                data-current-max="{{ amount_max }}"></div>
+            <input type="hidden" name="amount_min" id="amount_min" value="{{ amount_min }}">
+            <input type="hidden" name="amount_max" id="amount_max" value="{{ amount_max }}">
         </div>
     </div>
 
@@ -123,4 +126,31 @@
         {% endif %}
     </ul>
 </nav>
+
+<script>
+    var slider = document.getElementById('amount-range-slider');
+    noUiSlider.create(slider, {
+        start: [0, 10000],  // Můžete změnit podle požadovaného rozsahu
+        connect: true,
+        range: {
+            'min': 0,
+            'max': 10000
+        },
+        tooltips: [true, true],
+        format: {
+            to: function (value) {
+                return parseInt(value, 10);
+            },
+            from: function (value) {
+                return parseInt(value, 10);
+            }
+        }
+    });
+
+    slider.noUiSlider.on('update', function (values, handle) {
+        document.getElementById('amount_min').value = values[0];
+        document.getElementById('amount_max').value = values[1];
+    });
+</script>
+
 {% endblock %}
