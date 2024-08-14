@@ -1,4 +1,4 @@
-from django.db.models import Sum, DecimalField, Q, F, Case, When, Max
+from django.db.models import Sum, DecimalField, Q, F, Case, When, Max, Min, Avg, Value, Count
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
@@ -56,6 +56,57 @@ class TransactionListView(FilterView, ListView):
 
         context['amount_min'] = min_amount
         context['amount_max'] = max_amount
+
+        average_amount = filtered_qs.aggregate(
+            avg_amount=Avg(
+                Case(
+                    When(type='expense', then=F('amount') * Value(-1)),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            )
+        )['avg_amount'] or 0
+        context['average_amount'] = average_amount
+
+        # Výpočet nejvyšší částky
+        max_transaction_amount = filtered_qs.aggregate(
+            max_amount=Max(
+                Case(
+                    When(type='expense', then=F('amount') * Value(-1)),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            )
+        )['max_amount'] or 0
+        context['max_transaction_amount'] = max_transaction_amount
+
+        # Výpočet nejnižší částky
+        min_transaction_amount = filtered_qs.aggregate(
+            min_amount=Min(
+                Case(
+                    When(type='expense', then=F('amount') * Value(-1)),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            )
+        )['min_amount'] or 0
+        context['min_transaction_amount'] = min_transaction_amount
+
+        # Výpočet bilance (suma příjmů - suma výdajů)
+        balance = filtered_qs.aggregate(
+            total_balance=Sum(
+                Case(
+                    When(type='expense', then=F('amount') * Value(-1)),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            )
+        )['total_balance'] or 0
+        context['balance'] = balance
+
+        # Počet filtrovaných transakcí
+        transaction_count = filtered_qs.aggregate(count=Count('id'))['count']
+        context['transaction_count'] = transaction_count
 
         return context
 

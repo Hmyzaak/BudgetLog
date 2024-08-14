@@ -7,24 +7,3 @@
 .noUi-connect {
     background-color: #0dcaf0;  /* Barva odpovídající btn-info Bootstrap 5.3 */
 }
-
-.slider-container {
-    height: calc(1.5em + 0.75rem + 2px); /* Výchozí výška formulářových políček v Bootstrap */
-    display: flex;
-    align-items: center; /* Vertikální vycentrování obsahu */
-    padding: 0; /* Odstranění paddingu, aby se slider rozprostřel na celou výšku */
-}
-
-#amount-range-slider .noUi-handle {
-    height: 100%; /* Rukojeti (handles) mají stejnou výšku jako slider */
-    top: 0; /* Vertikální zarovnání handles */
-    margin-top: 0; /* Odstranění výchozího odsazení */
-}
-
-#amount-range-slider .noUi-horizontal {
-    height: 100%; /* Výška slideru se přizpůsobí nadřazenému kontejneru */
-}
-
-#amount-range-slider .noUi-target {
-    height: 100%; /* Nastavení výšky slideru na 100% */
-}

@@ -68,5 +68,25 @@
     <script src="{% static 'js/hamburger_menu.js' %}"></script>
     <script src="{% static 'js/nouislider.min.js' %}"></script>
     <script src="{% static 'js/custom_slider.js' %}"></script>
+    <script src="{% static 'js/filter-toggle.js' %}"></script>
+    {% block extra_js %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasFilters = urlParams.toString().includes('amount_min') ||
+                           urlParams.toString().includes('amount_max') ||
+                           urlParams.toString().includes('type') ||
+                           urlParams.toString().includes('datestamp__gte') ||
+                           urlParams.toString().includes('datestamp__lte') ||
+                           urlParams.toString().includes('category') ||
+                           urlParams.toString().includes('account') ||
+                           urlParams.toString().includes('description');
+
+        if (!hasFilters) {
+            localStorage.removeItem('filter-visible'); // Čistíme stav filtru, pokud nejsou aplikovány žádné filtry
+        }
+    });
+    </script>
+    {% endblock %}
 </body>
 </html>

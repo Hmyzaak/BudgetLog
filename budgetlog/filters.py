@@ -1,5 +1,4 @@
 import django_filters
-from django_filters import widgets
 from django import forms
 from .models import Transaction, Category, Account
 
