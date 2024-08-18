@@ -283,10 +283,9 @@ class YearDetailView(TemplateView):
         # Generování JSON dat pro graf
         category_data = []
         for category in category_summaries:
-            color = '#' + ''.join([random.choice('0123456789ABCDEF') for _ in range(6)])
             category_data.append({
                 'name': category.name,
-                'color': color
+                'color': category.color
             })
         monthly_data = {}
         for category in category_summaries:

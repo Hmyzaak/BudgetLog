@@ -77,6 +77,9 @@
 
 <div>
     <h2>Graf bilancí podle kategorií</h2>
+        <p>
+            Kliknutí na barvu nebo název kategorie danou kategorii odeberte nebo přidáte do zobrazení v grafu:
+        </p>
     <canvas id="transactionsChart" width="400" height="200"></canvas>
     <div>
         {% for category in categories %}
@@ -86,7 +89,6 @@
     </div>
 </div>
 
-<!-- Později převést do složky static a provázat se šablonami -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const ctx = document.getElementById('transactionsChart').getContext('2d');
