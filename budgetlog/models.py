@@ -20,6 +20,8 @@ class Category(models.Model):
     """Model pro kategorizaci transakcí."""
     name = models.CharField(max_length=200, unique=True, verbose_name="Název",
                             help_text="Uveď název kategorie pro transakce (např. potraviny, doprava, zábava)")
+    color = models.CharField(max_length=7, default='#000000', verbose_name="Barva kategorie",
+                             help_text="Barva kategorie pro zobrazení v grafu ročního přehledu")
     description = models.TextField(null=True, blank=True, verbose_name="Popis",
                                    help_text="Detailnější popis kategorie pro transakce (volitelný)")
 

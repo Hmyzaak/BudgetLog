@@ -23,8 +23,11 @@ class CategoryForm(forms.ModelForm):
 
     class Meta:
         model = Category
-        fields = ['name', 'description']
-        widgets = {'description': forms.Textarea(attrs={'rows': 1})}
+        fields = ['name', 'color', 'description']
+        widgets = {
+            'color': forms.TextInput(attrs={'type': 'color'}),
+            'description': forms.Textarea(attrs={'rows': 1})
+        }
 
 
 class AccountForm(forms.ModelForm):

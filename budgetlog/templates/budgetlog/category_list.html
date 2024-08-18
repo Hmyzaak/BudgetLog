@@ -10,6 +10,7 @@
     <thead>
         <tr>
             <th>Kategorie</th>
+            <th>Barva</th>
             <th>Akce</th>
         </tr>
     </thead>
@@ -17,6 +18,9 @@
         {% for category in categories %}
             <tr>
                 <td>{{ category.name }}</td>
+                <td>
+                    <div style="display: inline-block; width: 25px; height: 25px; border-radius: 50%; background-color: {{ category.color }};"></div>
+                </td>
                 <td>
                     <a href="{% url 'category-edit' category.id %}" class="btn btn-secondary btn-sm">Upravit</a>
                     <a href="{% url 'category-delete' category.id %}" class="btn btn-danger btn-sm">Smazat</a>
