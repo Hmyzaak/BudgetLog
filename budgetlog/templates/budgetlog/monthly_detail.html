@@ -8,6 +8,39 @@
 </div>
 <br>
 
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Celkové měsíční příjmy</h5>
+                <p class="card-text text-success">{{ total_income|floatformat:2 }} CZK</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Celkové měsíční výdaje</h5>
+                <p class="card-text text-danger">{{ total_expense|floatformat:2 }} CZK</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Celková měsíční bilance</h5>
+                <p class="card-text">
+                    {% if total_balance > 0 %}
+                        <span class="text-success">{{ total_balance|floatformat:2 }} CZK</span>
+                    {% else %}
+                        <span class="text-danger">{{ total_balance|floatformat:2 }} CZK</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Tabulka pro souhrn kategorií -->
 <h2>Souhrn podle kategorií</h2>
 <table class="table table-striped">

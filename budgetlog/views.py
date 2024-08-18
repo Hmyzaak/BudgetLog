@@ -4,14 +4,14 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django_filters.views import FilterView
+from django.utils.dateformat import format
 from decimal import Decimal
+from datetime import date
 from .models import Transaction, Category, Account
 from .filters import TransactionFilter
 from .forms import TransactionForm, CategoryForm, AccountForm
-
 import json
 import random
-from django.utils.dateformat import format
 
 
 # Create your views here.
@@ -122,7 +122,7 @@ class TransactionCreateView(CreateView):
     form_class = TransactionForm
     template_name = 'budgetlog/transaction_form.html'
     success_url = reverse_lazy('transaction-list')
-    # Po vytvoření nsakce přesměruje uživatele na 'transaction-list', tzn. "transaction/"
+    # Po vytvoření transakce přesměruje uživatele na 'transaction-list', tzn. "transaction/"
 
 
 class TransactionDetailView(DeleteView):
@@ -238,6 +238,22 @@ class MonthDetailView(TemplateView):
             datestamp__month=month
         ).order_by('-datestamp')  # Seřazení dle data, nejnovější nahoře
 
+        # Výpočet celkových měsíčních příjmů a výdajů
+        total_income = transactions.filter(type='income').aggregate(
+            total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
+        )['total']
+
+        total_expense = transactions.filter(type='expense').aggregate(
+            total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
+        )['total']
+
+        total_balance = total_income - total_expense
+
+        # Konverze Decimal na float (kvůli snadné práci v šabloně)
+        total_income = float(total_income)
+        total_expense = float(total_expense)
+        total_balance = float(total_balance)
+
         # Výpočet součtu transakcí pro každou kategorii
         """
         Q je objekt v Django, který se používá k vytváření složitějších dotazů pomocí ORM (Object-Relational Mapping). 
@@ -267,6 +283,9 @@ class MonthDetailView(TemplateView):
             'year': year,
             'month': month,
             'transactions': transactions,
+            'total_income': total_income,
+            'total_expense': total_expense,
+            'total_balance': total_balance,
             'category_summaries': category_summaries,
         })
         return context
@@ -293,6 +312,18 @@ class YearDetailView(TemplateView):
 
         total_balance = total_income - total_expense
 
+        # Data potřebná pro výpočet průměrných měsíčních hodnot v daném roce
+        # Získání aktuálního roku a měsíce
+        current_year = date.today().year
+        current_month = date.today().month
+
+        # Pokud se zpracovává aktuální rok, použijeme aktuální měsíc jako počet měsíců
+        if year == current_year:
+            month_count = current_month
+        else:
+            # Pokud se zpracovává jiný než aktuální rok, použijeme 12 měsíců
+            month_count = 12
+
         # Výpočet součtu a průměrné hodnoty transakcí pro každou kategorii
         months = transactions.dates('datestamp', 'month', order='ASC')
         category_summaries = Category.objects.annotate(
@@ -318,7 +349,7 @@ class YearDetailView(TemplateView):
                     ),
                     filter=Q(transaction__datestamp__year=year),
                     output_field=DecimalField()
-                ) / 12,  # Využití hodnoty 12 pro výpočet průměrné hodnoty, ale neuvažuje se zde, že v aktuálně probíhajícím roce, pro který se také používá tento výpočet, ještě nemusí být všech 12 měsíců, tzn. vypočtená hodnota tedy bude výrazně nižší než by měla reálně být
+                ) / month_count,
                 Decimal('0')
             )
         ).order_by('-total')
