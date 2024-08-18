@@ -1,17 +1,17 @@
-from django.db.models import Sum, DecimalField, Q, F, Case, When
+from django.db.models import Sum, DecimalField, Q, F, Case, When, Max, Min, Avg, Value, Count
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django_filters.views import FilterView
+from django.utils.dateformat import format
 from decimal import Decimal
+from datetime import date
 from .models import Transaction, Category, Account
 from .filters import TransactionFilter
 from .forms import TransactionForm, CategoryForm, AccountForm
-
 import json
 import random
-from django.utils.dateformat import format
 
 
 # Create your views here.
@@ -31,6 +31,7 @@ class TransactionListView(FilterView, ListView):
         context = super().get_context_data(**kwargs)
         filterset = self.filterset_class(self.request.GET, queryset=self.get_queryset())
         context['filter'] = filterset
+
         filtered_qs = filterset.qs
 
         paginator = Paginator(filtered_qs, self.paginate_by)
@@ -44,6 +45,69 @@ class TransactionListView(FilterView, ListView):
             transactions = paginator.page(paginator.num_pages)
 
         context['transactions'] = transactions
+
+        # Přidání maximální částky do kontextu
+        max_amount = Transaction.objects.aggregate(Max('amount'))['amount__max']
+        context['max_amount'] = max_amount
+
+        # Načtení aktuálních hodnot z GET parametrů, pokud jsou k dispozici
+        min_amount = self.request.GET.get('amount_min', 0)
+        max_amount = self.request.GET.get('amount_max', max_amount)
+
+        context['amount_min'] = min_amount
+        context['amount_max'] = max_amount
+
+        average_amount = filtered_qs.aggregate(
+            avg_amount=Avg(
+                Case(
+                    When(type='expense', then=F('amount') * Value(-1)),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            )
+        )['avg_amount'] or 0
+        context['average_amount'] = average_amount
+
+        # Výpočet nejvyšší částky
+        max_transaction_amount = filtered_qs.aggregate(
+            max_amount=Max(
+                Case(
+                    When(type='expense', then=F('amount') * Value(-1)),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            )
+        )['max_amount'] or 0
+        context['max_transaction_amount'] = max_transaction_amount
+
+        # Výpočet nejnižší částky
+        min_transaction_amount = filtered_qs.aggregate(
+            min_amount=Min(
+                Case(
+                    When(type='expense', then=F('amount') * Value(-1)),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            )
+        )['min_amount'] or 0
+        context['min_transaction_amount'] = min_transaction_amount
+
+        # Výpočet bilance (suma příjmů - suma výdajů)
+        balance = filtered_qs.aggregate(
+            total_balance=Sum(
+                Case(
+                    When(type='expense', then=F('amount') * Value(-1)),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            )
+        )['total_balance'] or 0
+        context['balance'] = balance
+
+        # Počet filtrovaných transakcí
+        transaction_count = filtered_qs.aggregate(count=Count('id'))['count']
+        context['transaction_count'] = transaction_count
+
         return context
 
     def get_queryset(self):
@@ -58,7 +122,7 @@ class TransactionCreateView(CreateView):
     form_class = TransactionForm
     template_name = 'budgetlog/transaction_form.html'
     success_url = reverse_lazy('transaction-list')
-    # Po vytvoření nsakce přesměruje uživatele na 'transaction-list', tzn. "transaction/"
+    # Po vytvoření transakce přesměruje uživatele na 'transaction-list', tzn. "transaction/"
 
 
 class TransactionDetailView(DeleteView):
@@ -174,6 +238,22 @@ class MonthDetailView(TemplateView):
             datestamp__month=month
         ).order_by('-datestamp')  # Seřazení dle data, nejnovější nahoře
 
+        # Výpočet celkových měsíčních příjmů a výdajů
+        total_income = transactions.filter(type='income').aggregate(
+            total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
+        )['total']
+
+        total_expense = transactions.filter(type='expense').aggregate(
+            total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
+        )['total']
+
+        total_balance = total_income - total_expense
+
+        # Konverze Decimal na float (kvůli snadné práci v šabloně)
+        total_income = float(total_income)
+        total_expense = float(total_expense)
+        total_balance = float(total_balance)
+
         # Výpočet součtu transakcí pro každou kategorii
         """
         Q je objekt v Django, který se používá k vytváření složitějších dotazů pomocí ORM (Object-Relational Mapping). 
@@ -203,6 +283,9 @@ class MonthDetailView(TemplateView):
             'year': year,
             'month': month,
             'transactions': transactions,
+            'total_income': total_income,
+            'total_expense': total_expense,
+            'total_balance': total_balance,
             'category_summaries': category_summaries,
         })
         return context
@@ -229,6 +312,18 @@ class YearDetailView(TemplateView):
 
         total_balance = total_income - total_expense
 
+        # Data potřebná pro výpočet průměrných měsíčních hodnot v daném roce
+        # Získání aktuálního roku a měsíce
+        current_year = date.today().year
+        current_month = date.today().month
+
+        # Pokud se zpracovává aktuální rok, použijeme aktuální měsíc jako počet měsíců
+        if year == current_year:
+            month_count = current_month
+        else:
+            # Pokud se zpracovává jiný než aktuální rok, použijeme 12 měsíců
+            month_count = 12
+
         # Výpočet součtu a průměrné hodnoty transakcí pro každou kategorii
         months = transactions.dates('datestamp', 'month', order='ASC')
         category_summaries = Category.objects.annotate(
@@ -254,7 +349,7 @@ class YearDetailView(TemplateView):
                     ),
                     filter=Q(transaction__datestamp__year=year),
                     output_field=DecimalField()
-                ) / 12,  # Využití hodnoty 12 pro výpočet průměrné hodnoty, ale neuvažuje se zde, že v aktuálně probíhajícím roce, pro který se také používá tento výpočet, ještě nemusí být všech 12 měsíců, tzn. vypočtená hodnota tedy bude výrazně nižší než by měla reálně být
+                ) / month_count,
                 Decimal('0')
             )
         ).order_by('-total')

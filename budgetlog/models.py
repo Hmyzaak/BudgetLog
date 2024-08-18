@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils import timezone
-from decimal import Decimal
 
 
 # Create your models here.
@@ -38,19 +37,19 @@ class Transaction(models.Model):
     # Definuje tuple pro typ transakce, který voláme níže
 
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Částka",
-                                 help_text="Uveď částku transakce v [CZK].")
+                                 help_text="Uveďte částku transakce v [CZK].")
     category = models.ForeignKey(Category, null=True, on_delete=models.SET_NULL, verbose_name="Kategorie",
-                                 help_text="Vyber kategorii pro tuto transakci.")
+                                 help_text="Vyberte kategorii pro tuto transakci.")
     """on_delete=models.SET_NULL nastaví hodnotu na NULL při smazání související kategorie, což zajistí, 
     že transakce nebude smazána."""
     datestamp = models.DateField(default=timezone.now, verbose_name="Datum",
                                  help_text="Datum provedení transakce.")
     description = models.TextField(null=True, blank=True, verbose_name="Popis",
-                                   help_text="Detailnější popis transakce (volitelný).")
+                                   help_text="Zadejte detailnější popis transakce (volitelný).")
     account = models.ForeignKey(Account, null=True, on_delete=models.SET_NULL, verbose_name="Účet",
-                                related_name='transactions', help_text="Vyber účet pro tuto transakci.")
+                                related_name='transactions', help_text="Vyberte účet pro tuto transakci.")
     type = models.CharField(max_length=7, choices=TYPE_CHOICES, default='expense', verbose_name="Typ",
-                            help_text="Je tato transakce výdaj nebo příjem?")
+                            help_text="Zvolte, zda je tato transakce výdaj nebo příjem?")
 
     def __str__(self):
         """Textová reprezentace modelu pro transakci."""

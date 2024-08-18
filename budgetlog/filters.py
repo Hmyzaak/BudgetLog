@@ -1,18 +1,12 @@
 import django_filters
-from django_filters import widgets
 from django import forms
 from .models import Transaction, Category, Account
 
 
 class TransactionFilter(django_filters.FilterSet):
     # Částka s rozsahem
-    amount = django_filters.RangeFilter(
-        field_name='amount',
-        label='Částka (od-do)',
-        widget=django_filters.widgets.RangeWidget(
-            attrs={'class': 'form-control form-control-range'}
-        )
-    )
+    amount_min = django_filters.NumberFilter(field_name='amount', lookup_expr='gte')
+    amount_max = django_filters.NumberFilter(field_name='amount', lookup_expr='lte')
 
     # Typ transakce (příjem/výdaj)
     type = django_filters.ChoiceFilter(
@@ -22,12 +16,17 @@ class TransactionFilter(django_filters.FilterSet):
     )
 
     # Datum s rozsahem
-    datestamp = django_filters.DateFromToRangeFilter(
+    datestamp__gte = django_filters.DateFilter(
         field_name='datestamp',
-        label='Datum (od-do)',
-        widget=django_filters.widgets.RangeWidget(
-            attrs={'class': 'form-control', 'type': 'date'}
-        )
+        lookup_expr='gte',
+        label='Datum (od)',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    datestamp__lte = django_filters.DateFilter(
+        field_name='datestamp',
+        lookup_expr='lte',
+        label='Datum (do)',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
 
     # Kategorie a účet
@@ -52,5 +51,5 @@ class TransactionFilter(django_filters.FilterSet):
 
     class Meta:
         model = Transaction
-        fields = ['amount', 'type', 'datestamp', 'category', 'account', 'description']
+        fields = ['amount_min', 'amount_max', 'type', 'datestamp__gte', 'datestamp__lte', 'category', 'account', 'description']
 
