@@ -22,4 +22,4 @@ class TransactionAdmin(admin.ModelAdmin):
     list_display = ('amount', 'category', 'datestamp', 'description', 'account', 'type')
     list_filter = ('type', 'category', 'datestamp', 'account')
     search_fields = ('category__name', 'account')
-
+    # Zobrazuje zmíněné sloupce v admin seznamu a umožňuje podle níže uvedených filtrovat

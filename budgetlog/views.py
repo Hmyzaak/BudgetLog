@@ -11,7 +11,6 @@ from .models import Transaction, Category, Account
 from .filters import TransactionFilter
 from .forms import TransactionForm, CategoryForm, AccountForm
 import json
-import random
 
 
 # Create your views here.
