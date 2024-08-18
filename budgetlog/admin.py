@@ -13,8 +13,8 @@ class AccountAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description')
-    # Zobrazuje sloupce 'name' a 'description' v admin seznamu
+    list_display = ('name', 'color', 'description')
+    # Zobrazuje sloupce 'name' , 'color' a 'description' v admin seznamu
 
 
 @admin.register(Transaction)
