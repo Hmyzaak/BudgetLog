@@ -34,11 +34,26 @@
                         <a class="nav-link" href="{% url 'transaction-list' %}">Transakce a filtrování</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'transaction-add' %}">Nová transakce</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'category-list' %}">Kategorie</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'account-list' %}">Účty</a>
                     </li>
+                    {% if request.user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'registration' %}">Registrace</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Login</a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </nav>

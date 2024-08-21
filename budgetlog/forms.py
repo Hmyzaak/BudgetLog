@@ -1,5 +1,5 @@
 from django import forms
-from .models import Transaction, Category, Account
+from .models import *
 
 
 class TransactionForm(forms.ModelForm):
@@ -37,3 +37,19 @@ class AccountForm(forms.ModelForm):
         model = Account
         fields = ['name', 'description']
         widgets = {'description': forms.Textarea(attrs={'rows': 1})}
+
+
+class UserForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput)
+
+    class Meta:
+        model = AppUser
+        fields = ["email", "password"]
+
+
+class LoginForm(forms.Form):
+    email = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
+
+    class Meta:
+        fields = ["email", "password"]

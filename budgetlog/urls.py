@@ -25,4 +25,7 @@ urlpatterns = [
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('dashboard/month/<int:year>/<int:month>/', views.MonthDetailView.as_view(), name='month-detail'),
     path('dashboard/year/<int:year>/', views.YearDetailView.as_view(), name='year-detail'),
+    path('register/', views.UserViewRegister.as_view(), name='registration'),
+    path('login/', views.UserViewLogin.as_view(), name='login'),
+    path('logout/', views.logout_user, name='logout'),
 ]

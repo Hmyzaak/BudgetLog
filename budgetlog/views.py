@@ -1,16 +1,19 @@
 from django.db.models import Sum, DecimalField, Q, F, Case, When, Max, Min, Avg, Value, Count
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.shortcuts import render, redirect
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django_filters.views import FilterView
 from django.utils.dateformat import format
 from decimal import Decimal
 from datetime import date
-from .models import Transaction, Category, Account
+from .models import *
 from .filters import TransactionFilter
-from .forms import TransactionForm, CategoryForm, AccountForm
+from .forms import *
 import json
+from django.contrib.auth import login, logout, authenticate
+from django.contrib import messages
 
 
 # Create your views here.
@@ -403,3 +406,52 @@ class YearDetailView(TemplateView):
             'monthly_data_json': json.dumps(monthly_data),
         })
         return context
+
+
+class UserViewRegister(CreateView):
+    form_class = UserForm
+    model = AppUser
+    template_name = 'budgetlog/user_form.html'
+
+    def get(self, request):
+        form = self.form_class(None)
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            password = form.cleaned_data["password"]
+            user.set_password(password)
+            user.save()
+            login(request, user)
+            return redirect('transaction-add')
+        return render(request, self.template_name, {"form": form})
+
+
+class UserViewLogin(CreateView):
+    form_class = LoginForm
+    template_name = 'budgetlog/user_form.html'
+
+    def get(self, request):
+        form = self.form_class(None)
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+            password = form. cleaned_data["password"]
+            user = authenticate(email=email, password=password)
+            if user:
+                login(request, user)
+                return redirect('transaction-add')
+        return render(request, self.template_name, {"form": form})
+
+
+def logout_user(request):
+    if request.user.is_authenticated:
+        logout(request)
+    else:
+        messages.info(request, "Nemůžeš se odhlásit, pokud nejsi přihlášený.")
+    return redirect('login')

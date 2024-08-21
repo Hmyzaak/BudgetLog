@@ -1,9 +1,15 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
 
 # Create your models here.
 class Account(models.Model):
+    """Model reprezentující účet k němuž se transakce vztahuje."""
+    class Meta:
+        verbose_name = "Účet"
+        verbose_name_plural = "Účty"
+
     name = models.CharField(max_length=100, unique=True, verbose_name="Jméno účtu",
                             help_text="Uveď jméno či označení účtu")
     description = models.TextField(null=True, blank=True, verbose_name="Popis účtu",
@@ -18,6 +24,10 @@ class Account(models.Model):
 
 class Category(models.Model):
     """Model pro kategorizaci transakcí."""
+    class Meta:
+        verbose_name = "Kategorie"
+        verbose_name_plural = "Kategorie"
+
     name = models.CharField(max_length=200, unique=True, verbose_name="Název",
                             help_text="Uveď název kategorie pro transakce (např. potraviny, doprava, zábava)")
     color = models.CharField(max_length=7, default='#000000', verbose_name="Barva kategorie",
@@ -32,6 +42,10 @@ class Category(models.Model):
 
 class Transaction(models.Model):
     """Model reprezentující záznam o finanční transakci."""
+    class Meta:
+        verbose_name = "Transakce"
+        verbose_name_plural = "Transakce"
+
     TYPE_CHOICES = (
         ('income', 'Příjem'),
         ('expense', 'Výdaj')
@@ -69,3 +83,51 @@ class Transaction(models.Model):
     property) modelu a ne skutečné pole v databázi. Pokud chceme filtrovat nebo agregovat ve views podle upravených 
     částek, musíme to udělat pomocí amount a přizpůsobit SQL dotaz.
     """
+
+
+class UserManager(BaseUserManager):
+    """Vytvoří uživatele a admina."""
+    def create_user(self, email, password):
+        print(self.model)
+        if email and password:
+            user = self.model(email=self.normalize_email(email))
+            user.set_password(password)
+            user.save()
+            return user
+
+    def create_superuser(self, email, password):
+        user = self.create_user(email, password)
+        user.is_admin = True
+        user.save()
+        return user
+
+
+class AppUser(AbstractBaseUser):
+    """Model reprezentující uživatele."""
+    email = models.EmailField(max_length=300, unique=True)
+    is_admin = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Uživatel"
+        verbose_name_plural = "Uživatelé"
+
+    objects = UserManager()
+
+    USERNAME_FIELD = "email"
+
+    def __str__(self):
+        """Textová reprezentace uživatele jako jeho mailu."""
+        return "email: {}".format(self.email)
+
+    @property
+    def is_staff(self):
+        """Vrací, zda je uživatel admin."""
+        return self.is_admin
+
+    def has_perm(self, perm, obj=None):
+        """Vrací, zda má uživatel povolení, pro neaktivní uživatele vrací False."""
+        return True
+
+    def has_module_perms(self, app_label):
+        """Vrací True, pokud má uživatel povolení pro daný modul."""
+        return True
