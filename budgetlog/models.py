@@ -4,87 +4,6 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
 
 # Create your models here.
-class Account(models.Model):
-    """Model reprezentující účet k němuž se transakce vztahuje."""
-    class Meta:
-        verbose_name = "Účet"
-        verbose_name_plural = "Účty"
-
-    name = models.CharField(max_length=100, unique=True, verbose_name="Jméno účtu",
-                            help_text="Uveď jméno či označení účtu")
-    description = models.TextField(null=True, blank=True, verbose_name="Popis účtu",
-                                   help_text="Detailnější popis účtu (volitelný)")
-    """null=True umožňuje, aby pole mohlo být v databázi prázdné, a blank=True umožňuje, aby pole mohlo být ponecháno 
-    prázdné ve formulářích."""
-
-    def __str__(self):
-        """Textová reprezentace modelu Account"""
-        return self.name
-
-
-class Category(models.Model):
-    """Model pro kategorizaci transakcí."""
-    class Meta:
-        verbose_name = "Kategorie"
-        verbose_name_plural = "Kategorie"
-
-    name = models.CharField(max_length=200, unique=True, verbose_name="Název",
-                            help_text="Uveď název kategorie pro transakce (např. potraviny, doprava, zábava)")
-    color = models.CharField(max_length=7, default='#000000', verbose_name="Barva kategorie",
-                             help_text="Barva kategorie pro zobrazení v grafu ročního přehledu")
-    description = models.TextField(null=True, blank=True, verbose_name="Popis",
-                                   help_text="Detailnější popis kategorie pro transakce (volitelný)")
-
-    def __str__(self):
-        """Textová reprezentace modelu Category."""
-        return self.name
-
-
-class Transaction(models.Model):
-    """Model reprezentující záznam o finanční transakci."""
-    class Meta:
-        verbose_name = "Transakce"
-        verbose_name_plural = "Transakce"
-
-    TYPE_CHOICES = (
-        ('income', 'Příjem'),
-        ('expense', 'Výdaj')
-    )
-    # Definuje tuple pro typ transakce, který voláme níže
-
-    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Částka",
-                                 help_text="Uveďte částku transakce v [CZK].")
-    category = models.ForeignKey(Category, null=True, on_delete=models.SET_NULL, verbose_name="Kategorie",
-                                 help_text="Vyberte kategorii pro tuto transakci.")
-    """on_delete=models.SET_NULL nastaví hodnotu na NULL při smazání související kategorie, což zajistí, 
-    že transakce nebude smazána."""
-    datestamp = models.DateField(default=timezone.now, verbose_name="Datum",
-                                 help_text="Datum provedení transakce.")
-    description = models.TextField(null=True, blank=True, verbose_name="Popis",
-                                   help_text="Zadejte detailnější popis transakce (volitelný).")
-    account = models.ForeignKey(Account, null=True, on_delete=models.SET_NULL, verbose_name="Účet",
-                                related_name='transactions', help_text="Vyberte účet pro tuto transakci.")
-    type = models.CharField(max_length=7, choices=TYPE_CHOICES, default='expense', verbose_name="Typ",
-                            help_text="Zvolte, zda je tato transakce výdaj nebo příjem?")
-
-    def __str__(self):
-        """Textová reprezentace modelu pro transakci."""
-        type_display = dict(self.TYPE_CHOICES).get(self.type, self.type)
-        return f"{type_display}: {self.adjusted_amount} CZK {self.datestamp}"
-
-    @property
-    def adjusted_amount(self):
-        """Vrátí částku s upraveným znaménkem podle typu transakce (výdaj bude záporný)."""
-        if self.type == 'expense':
-            return -self.amount
-        return self.amount
-    """
-    Django neumožňuje použít adjusted_amount přímo v anotacích a agregacích, protože adjusted_amount je vlastnost (
-    property) modelu a ne skutečné pole v databázi. Pokud chceme filtrovat nebo agregovat ve views podle upravených 
-    částek, musíme to udělat pomocí amount a přizpůsobit SQL dotaz.
-    """
-
-
 class UserManager(BaseUserManager):
     """Vytvoří uživatele a admina."""
     def create_user(self, email, password):
@@ -131,3 +50,103 @@ class AppUser(AbstractBaseUser):
     def has_module_perms(self, app_label):
         """Vrací True, pokud má uživatel povolení pro daný modul."""
         return True
+
+
+class Project(models.Model):
+    """Model reprezentující databáze transakcí."""
+    class Meta:
+        verbose_name = "Databáze transakcí"
+        verbose_name_plural = "Databáze transakcí"
+
+    name = models.CharField(max_length=255, verbose_name="Název databáze transakcí",
+                            help_text="Vyplň název databáze transakcí")
+    owner = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='owned_projects')
+    users = models.ManyToManyField(AppUser, related_name='projects')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Account(models.Model):
+    """Model reprezentující účet k němuž se transakce vztahuje."""
+    class Meta:
+        verbose_name = "Účet"
+        verbose_name_plural = "Účty"
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
+    name = models.CharField(max_length=100, unique=True, verbose_name="Jméno účtu",
+                            help_text="Uveď jméno či označení účtu")
+    description = models.TextField(null=True, blank=True, verbose_name="Popis účtu",
+                                   help_text="Detailnější popis účtu (volitelný)")
+    """null=True umožňuje, aby pole mohlo být v databázi prázdné, a blank=True umožňuje, aby pole mohlo být ponecháno 
+    prázdné ve formulářích."""
+
+    def __str__(self):
+        """Textová reprezentace modelu Account"""
+        return self.name
+
+
+class Category(models.Model):
+    """Model pro kategorizaci transakcí."""
+    class Meta:
+        verbose_name = "Kategorie"
+        verbose_name_plural = "Kategorie"
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
+    name = models.CharField(max_length=200, unique=True, verbose_name="Název",
+                            help_text="Uveď název kategorie pro transakce (např. potraviny, doprava, zábava)")
+    color = models.CharField(max_length=7, default='#000000', verbose_name="Barva kategorie",
+                             help_text="Barva kategorie pro zobrazení v grafu ročního přehledu")
+    description = models.TextField(null=True, blank=True, verbose_name="Popis",
+                                   help_text="Detailnější popis kategorie pro transakce (volitelný)")
+
+    def __str__(self):
+        """Textová reprezentace modelu Category."""
+        return self.name
+
+
+class Transaction(models.Model):
+    """Model reprezentující záznam o finanční transakci."""
+    class Meta:
+        verbose_name = "Transakce"
+        verbose_name_plural = "Transakce"
+
+    TYPE_CHOICES = (
+        ('income', 'Příjem'),
+        ('expense', 'Výdaj')
+    )
+    # Definuje tuple pro typ transakce, který voláme níže
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Částka",
+                                 help_text="Uveďte částku transakce v [CZK].")
+    category = models.ForeignKey(Category, null=True, on_delete=models.SET_NULL, verbose_name="Kategorie",
+                                 help_text="Vyberte kategorii pro tuto transakci.")
+    """on_delete=models.SET_NULL nastaví hodnotu na NULL při smazání související kategorie, což zajistí, 
+    že transakce nebude smazána."""
+    datestamp = models.DateField(default=timezone.now, verbose_name="Datum",
+                                 help_text="Datum provedení transakce.")
+    description = models.TextField(null=True, blank=True, verbose_name="Popis",
+                                   help_text="Zadejte detailnější popis transakce (volitelný).")
+    account = models.ForeignKey(Account, null=True, on_delete=models.SET_NULL, verbose_name="Účet",
+                                related_name='transactions', help_text="Vyberte účet pro tuto transakci.")
+    type = models.CharField(max_length=7, choices=TYPE_CHOICES, default='expense', verbose_name="Typ",
+                            help_text="Zvolte, zda je tato transakce výdaj nebo příjem?")
+
+    def __str__(self):
+        """Textová reprezentace modelu pro transakci."""
+        type_display = dict(self.TYPE_CHOICES).get(self.type, self.type)
+        return f"{type_display}: {self.adjusted_amount} CZK {self.datestamp}"
+
+    @property
+    def adjusted_amount(self):
+        """Vrátí částku s upraveným znaménkem podle typu transakce (výdaj bude záporný)."""
+        if self.type == 'expense':
+            return -self.amount
+        return self.amount
+    """
+    Django neumožňuje použít adjusted_amount přímo v anotacích a agregacích, protože adjusted_amount je vlastnost (
+    property) modelu a ne skutečné pole v databázi. Pokud chceme filtrovat nebo agregovat ve views podle upravených 
+    částek, musíme to udělat pomocí amount a přizpůsobit SQL dotaz.
+    """

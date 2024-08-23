@@ -89,3 +89,8 @@ ERRORS:
 <class 'budgetlog.admin.UserAdmin'>: (admin.E019) The value of 'filter_horizontal[0]' refers to 'groups', which is not a field of 'budgetlog.User'.
 <class 'budgetlog.admin.UserAdmin'>: (admin.E019) The value of 'filter_horizontal[1]' refers to 'user_permissions', which is not a field of 'budgetlog.User'.
 """
+
+
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin):
+    """Zobrazuje sloupce 'name' , 'owner' a 'users' v admin seznamu."""

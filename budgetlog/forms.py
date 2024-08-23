@@ -53,3 +53,23 @@ class LoginForm(forms.Form):
 
     class Meta:
         fields = ["email", "password"]
+
+
+class ProjectForm(forms.ModelForm):
+    users = forms.CharField(help_text="Vlož emailové adresy uživatelů s nimiž chceš databázi transakcí sdílet a "
+                                      "odděluj je čárkami.")
+
+    class Meta:
+        model = Project
+        fields = ["name", "users"]
+
+    def save(self, commit=True):
+        project = super().save(commit=False)
+        project.owner = self.user
+        if commit:
+            project.save()
+            emails = self.cleaned_data["users"].split(",")
+            for email in emails:
+                user = AppUser.objects.get(email=email.strip())
+                project.users.add(user)
+        return project

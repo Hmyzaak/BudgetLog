@@ -1,7 +1,8 @@
 from django.db.models import Sum, DecimalField, Q, F, Case, When, Max, Min, Avg, Value, Count
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.shortcuts import render, redirect
+from django.http import Http404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django_filters.views import FilterView
@@ -18,7 +19,45 @@ from django.contrib import messages
 
 # Create your views here.
 # Všechny třídy dědí z generických View podle toho, co s daným modelem mají dělat.
-class TransactionListView(FilterView, ListView):
+class ProjectCreateView(CreateView):
+    form_class = ProjectForm
+    template_name = 'budgetlog/project_form.html'
+
+    def get(self, request):
+        form = self.form_class(None)
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            project = form.save(commit=False)
+            project.owner = request.user
+            project.save()
+            emails = form.cleaned_data['users'].split(',')
+            for email in emails:
+                user = AppUser.objects.get(email=email.strip())
+                project.users.add(user)
+            return redirect('project-list')
+        return render(request, self.template_name, {'form': form})
+
+
+class ProjectListView(ListView):
+    template_name = 'budgetlog/project_list.html'
+
+    def get(self, request):
+        projects = Project.objects.filter(users=request.user)
+        return render(request, self.template_name, {'projects': projects})
+
+
+class BaseView(TemplateView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        project_id = self.kwargs.get('project_id', None)
+        context['project_id'] = project_id
+        return context
+
+
+class TransactionListView(BaseView, FilterView, ListView):
     """Umožňuje vytvořit a držet data pro filtrování v seznamu transakcí a umožňuje stránkování v těchto seznamech"""
     model = Transaction
     filterset_class = TransactionFilter
@@ -29,8 +68,26 @@ class TransactionListView(FilterView, ListView):
     paginate_by = 30  # Počet transakcí na stránku
     ordering = ['-datestamp']  # Řazení transakcí podle data od nejnovějších
 
+    def get_queryset(self):
+        # Získání aktuálního projektu na základě URL parametru
+        project_id = self.kwargs.get('project_id')
+        project = get_object_or_404(Project, id=project_id, users=self.request.user)
+
+        # Filtrování transakcí podle projektu
+        queryset = super().get_queryset().filter(project=project)
+
+        # Použití filtru
+        filterset = self.filterset_class(self.request.GET, queryset=queryset)
+        return filterset.qs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        project_id = self.kwargs.get('project_id')
+        project = get_object_or_404(Project, id=project_id, users=self.request.user)
+
+        context['project'] = project
+        context['transactions'] = self.get_queryset() # Upravit?
+
         filterset = self.filterset_class(self.request.GET, queryset=self.get_queryset())
         context['filter'] = filterset
 
@@ -112,60 +169,102 @@ class TransactionListView(FilterView, ListView):
 
         return context
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        filterset = self.filterset_class(self.request.GET, queryset=queryset)
-        return filterset.qs
 
-
-class TransactionCreateView(CreateView):
+class TransactionCreateView(BaseView, CreateView):
     """Umožní uživateli vytvořit novou transakci."""
     model = Transaction
     form_class = TransactionForm
     template_name = 'budgetlog/transaction_form.html'
-    success_url = reverse_lazy('transaction-list')
-    # Po vytvoření transakce přesměruje uživatele na 'transaction-list', tzn. "transaction/"
+
+    def form_valid(self, form):
+        project_id = self.kwargs.get('project_id')
+        project = get_object_or_404(Project, id=project_id, users=self.request.user)
+        transaction = form.save(commit=False)
+        transaction.project = project
+        transaction.save()
+        return redirect('transaction-list', project_id=project.id)
 
 
-class TransactionDetailView(DeleteView):
+class TransactionDetailView(BaseView, DeleteView):
     """Umožní uživateli náhled na veškeré informace o transakci."""
     model = Transaction
     template_name = 'budgetlog/transaction_detail.html'
     context_object_name = 'transaction'
 
+    def get_object(self, queryset=None):
+        transaction = super().get_object(queryset)
+        project = transaction.project
+        if self.request.user not in project.users.all():
+            raise Http404("Nemáte přístup k této transakci.")
+        return transaction
 
-class TransactionUpdateView(UpdateView):
+
+class TransactionUpdateView(BaseView, UpdateView):
     """Umožní uživateli upravit existující transakci."""
     model = Transaction
     form_class = TransactionForm
     template_name = 'budgetlog/transaction_form.html'
-    success_url = reverse_lazy('transaction-list')
+
+    def get_object(self, queryset=None):
+        transaction = super().get_object(queryset)
+        project = transaction.project
+        if self.request.user not in project.users.all():
+            raise Http404("Nemáte přístup k této transakci.")
+        return transaction
+
+    def form_valid(self, form):
+        transaction = form.save(commit=False)
+        transaction.save()
+        return redirect('transaction-list', project_id=transaction.project.id)
 
 
-class TransactionDeleteView(DeleteView):
+class TransactionDeleteView(BaseView, DeleteView):
     """Umožní uživateli smazat transakci."""
     model = Transaction
     template_name = 'budgetlog/transaction_confirm_delete.html'
     success_url = reverse_lazy('transaction-list')
 
+    def get_object(self, queryset=None):
+        transaction = super().get_object(queryset)
+        project = transaction.project
+        if self.request.user not in project.users.all():
+            raise Http404("Nemáte přístup k této transakci.")
+        return transaction
 
-class CategoryListView(ListView):
+    def get_success_url(self):
+        transaction = self.get_object()
+        return reverse_lazy('transaction-list', kwargs={'project_id': transaction.project.id})
+
+
+class CategoryListView(BaseView, ListView):
     """Zobrazí seznam všech kategorií."""
     model = Category
     template_name = 'budgetlog/category_list.html'
     context_object_name = 'categories'
     ordering = ['name']  # Řazení dle atributu name v modelu Category
 
+    def get_queryset(self):
+        project_id = self.kwargs.get('project_id')
+        project = get_object_or_404(Project, id=project_id, users=self.request.user)
+        return Category.objects.filter(project=project)
 
-class CategoryCreateView(CreateView):
+
+class CategoryCreateView(BaseView, CreateView):
     """Umožní uživateli vytvořit novou kategorii."""
     model = Category
     form_class = CategoryForm
     template_name = 'budgetlog/category_form.html'
-    success_url = reverse_lazy('category-list')
+
+    def form_valid(self, form):
+        project_id = self.kwargs.get('project_id')
+        project = get_object_or_404(Project, id=project_id, users=self.request.user)
+        category = form.save(commit=False)
+        category.project = project
+        category.save()
+        return redirect('category-list', project_id=project.id)
 
 
-class CategoryUpdateView(UpdateView):
+class CategoryUpdateView(BaseView, UpdateView):
     """Umožní uživateli upravit existující kategorii."""
     model = Category
     form_class = CategoryForm
@@ -173,30 +272,42 @@ class CategoryUpdateView(UpdateView):
     success_url = reverse_lazy('category-list')
 
 
-class CategoryDeleteView(DeleteView):
+class CategoryDeleteView(BaseView, DeleteView):
     """Umožní uživateli smazat kategorii."""
     model = Category
     template_name = 'budgetlog/category_confirm_delete.html'
     success_url = reverse_lazy('category-list')
 
 
-class AccountListView(ListView):
+class AccountListView(BaseView, ListView):
     """Zobrazí seznam všech účtů."""
     model = Account
     template_name = 'budgetlog/account_list.html'
     context_object_name = 'accounts'
     ordering = ['name']  # Řazení dle atributu name v modelu Account
 
+    def get_queryset(self):
+        project_id = self.kwargs.get('project_id')
+        project = get_object_or_404(Project, id=project_id, users=self.request.user)
+        return Account.objects.filter(project=project)
 
-class AccountCreateView(CreateView):
+
+class AccountCreateView(BaseView, CreateView):
     """Umožní uživateli vytvořit nový účet."""
     model = Account
     form_class = AccountForm
     template_name = 'budgetlog/account_form.html'
-    success_url = reverse_lazy('account-list')
+
+    def form_valid(self, form):
+        project_id = self.kwargs.get('project_id')
+        project = get_object_or_404(Project, id=project_id, users=self.request.user)
+        account = form.save(commit=False)
+        account.project = project
+        account.save()
+        return redirect('account-list', project_id=project.id)
 
 
-class AccountUpdateView(UpdateView):
+class AccountUpdateView(BaseView, UpdateView):
     """Umožní uživateli upravit existující účet."""
     model = Account
     form_class = AccountForm
@@ -204,24 +315,28 @@ class AccountUpdateView(UpdateView):
     success_url = reverse_lazy('account-list')
 
 
-class AccountDeleteView(DeleteView):
+class AccountDeleteView(BaseView, DeleteView):
     """Umožní uživateli smazat účet."""
     model = Account
     template_name = 'budgetlog/account_confirm_delete.html'
     success_url = reverse_lazy('account-list')
 
 
-class DashboardView(TemplateView):
+class DashboardView(BaseView, TemplateView):
     """Templát pro stránku se souhrnnými přehledy."""
     template_name = 'budgetlog/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        transactions = Transaction.objects.all()
+        project_id = self.kwargs.get('project_id')
+        project = get_object_or_404(Project, id=project_id, users=self.request.user)
+        transactions = Transaction.objects.filter(project=project)
         months_years = transactions.dates('datestamp', 'month', order='DESC')
         years = transactions.dates('datestamp', 'year', order='DESC')
 
         context.update({
+            'project_id': project_id,
+            'project': project,
             'months_years': months_years,
             'years': years,
         })
@@ -229,7 +344,7 @@ class DashboardView(TemplateView):
         return context
 
 
-class MonthDetailView(TemplateView):
+class MonthDetailView(BaseView, TemplateView):
     """Templát pro detailní statistiky daného měsíce."""
     template_name = 'budgetlog/monthly_detail.html'
 
@@ -293,7 +408,7 @@ class MonthDetailView(TemplateView):
         return context
 
 
-class YearDetailView(TemplateView):
+class YearDetailView(BaseView, TemplateView):
     """Templát pro zobrazení statistik transakcí u vybraného roku."""
     template_name = 'budgetlog/yearly_detail.html'
 
@@ -455,3 +570,4 @@ def logout_user(request):
     else:
         messages.info(request, "Nemůžeš se odhlásit, pokud nejsi přihlášený.")
     return redirect('login')
+
