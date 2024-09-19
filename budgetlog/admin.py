@@ -42,23 +42,29 @@ class UserChangeForm(forms.ModelForm):
 
 
 # Register your models here.
+@admin.register(Book)
+class BookAdmin(admin.ModelAdmin):
+    """Zobrazuje sloupce 'name' a 'description' v admin seznamu."""
+    list_display = ('name', 'description', 'owner')
+
+
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    """Zobrazuje sloupce 'name' a 'description' v admin seznamu."""
-    list_display = ('name', 'description')
+    """Zobrazuje sloupce 'name', 'description' a 'book' v admin seznamu."""
+    list_display = ('name', 'description', 'book')
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    """Zobrazuje sloupce 'name' , 'color' a 'description' v admin seznamu."""
-    list_display = ('name', 'color', 'description')
+    """Zobrazuje sloupce 'name' , 'color', 'description' a 'book' v admin seznamu."""
+    list_display = ('name', 'color', 'description', 'book')
 
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
     """Zobrazuje všechny atributy transakce ve sloupcích v admin seznamu a umožňuje podle níže uvedených filtrovat."""
-    list_display = ('amount', 'category', 'datestamp', 'description', 'account', 'type')
-    list_filter = ('type', 'category', 'datestamp', 'account')
+    list_display = ('amount', 'category', 'datestamp', 'description', 'account', 'type', 'book')
+    list_filter = ('type', 'category', 'datestamp', 'account', 'book')
 
 
 @admin.register(AppUser)

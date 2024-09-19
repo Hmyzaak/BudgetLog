@@ -17,6 +17,14 @@ class TransactionForm(forms.ModelForm):
         help_texts = {'datestamp': "Zadejte datum provedení, příp. započtení, transakce."}
         # Upravuje pomocný text pro pole datestamp
 
+        def __init__(self, *args, **kwargs):
+            self.book = kwargs.pop('book', None)
+            super().__init__(*args, **kwargs)
+            if self.book:
+                self.fields['category'].queryset = Category.objects.filter(book=self.book)
+                self.fields['account'].queryset = Account.objects.filter(book=self.book)
+        # Výběrová pole jsou filtrována na základě aktuální knihy
+
 
 class CategoryForm(forms.ModelForm):
     """Formulář pro přidání a úpravu kategorií transakcí."""

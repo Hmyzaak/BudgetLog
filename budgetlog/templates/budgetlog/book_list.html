@@ -1,0 +1,15 @@
+{% extends 'base_generic.html' %}
+
+{% block content %}
+  <h1>Vaše knihy</h1>
+  <ul>
+    {% for book in books %}
+      <li>
+        <a href="{% url 'select-book' book_id=book.id %}">{{ book.name }}</a>
+        (<a href="{% url 'book-update' pk=book.id %}">Upravit</a>,
+         <a href="{% url 'book-delete' pk=book.id %}">Smazat</a>)
+      </li>
+    {% endfor %}
+  </ul>
+  <a href="{% url 'book-create' %}">Vytvořit novou knihu</a>
+{% endblock %}

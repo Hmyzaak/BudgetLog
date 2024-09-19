@@ -1,7 +1,7 @@
 from django.db.models import Sum, DecimalField, Q, F, Case, When, Max, Min, Avg, Value, Count
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django_filters.views import FilterView
@@ -12,13 +12,155 @@ from .models import *
 from .filters import TransactionFilter
 from .forms import *
 import json
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
+from django.http import Http404
 
 
 # Create your views here.
 # Všechny třídy dědí z generických View podle toho, co s daným modelem mají dělat.
-class TransactionListView(FilterView, ListView):
+class UserViewRegister(CreateView):
+    form_class = UserForm
+    model = AppUser
+    template_name = 'budgetlog/user_form.html'
+
+    def get(self, request):
+        form = self.form_class(None)
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            password = form.cleaned_data["password"]
+            user.set_password(password)
+            user.save()
+
+            # Po uložení uživatele mu vytvoříme knihu
+            book = Book.objects.create(name="Moje kniha", owner=user)
+            request.session['current_book_id'] = book.id  # Nastavíme novou knihu jako aktuální
+
+            login(request, user)
+            return redirect('transaction-add')
+        return render(request, self.template_name, {"form": form})
+
+
+class UserViewLogin(CreateView):
+    form_class = LoginForm
+    template_name = 'budgetlog/user_form.html'
+
+    def get(self, request):
+        form = self.form_class(None)
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+            password = form. cleaned_data["password"]
+            user = authenticate(email=email, password=password)
+            if user:
+                login(request, user)
+                return redirect('transaction-add')
+        return render(request, self.template_name, {"form": form})
+
+
+def logout_user(request):
+    if request.user.is_authenticated:
+        logout(request)
+    else:
+        messages.info(request, "Nemůžeš se odhlásit, pokud nejsi přihlášený.")
+    return redirect('login')
+
+
+class BookListView(LoginRequiredMixin, ListView):
+    model = Book
+    template_name = 'budgetlog/book_list.html'
+    context_object_name = 'books'
+
+    def get_queryset(self):
+        return Book.objects.filter(owner=self.request.user)
+
+
+class BookCreateView(LoginRequiredMixin, CreateView):
+    model = Book
+    fields = ['name', 'description']
+    template_name = 'budgetlog/book_form.html'
+    success_url = reverse_lazy('book-list')
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
+
+
+class BookUpdateView(LoginRequiredMixin, UpdateView):
+    model = Book
+    fields = ['name', 'description']
+    template_name = 'budgetlog/book_form.html'
+    success_url = reverse_lazy('book-list')
+
+    def get_queryset(self):
+        return Book.objects.filter(owner=self.request.user)
+
+
+class BookDeleteView(LoginRequiredMixin, DeleteView):
+    model = Book
+    template_name = 'budgetlog/book_confirm_delete.html'
+    success_url = reverse_lazy('book-list')
+
+    def get_queryset(self):
+        return Book.objects.filter(owner=self.request.user)
+
+
+class SelectBookView(LoginRequiredMixin, TemplateView):
+    template_name = 'budgetlog/select_book.html'
+
+    def get(self, request, *args, **kwargs):
+        books = Book.objects.filter(owner=request.user)
+        if not books:
+            # Pokud uživatel nemá žádné knihy, přesměrujeme ho na vytvoření nové
+            return redirect('book-create')
+        return render(request, self.template_name, {'books': books})
+
+    def post(self, request, *args, **kwargs):
+        book_id = request.POST.get('book_id')
+        if book_id:
+            book = get_object_or_404(Book, id=book_id, owner=request.user)
+            request.session['current_book_id'] = book.id
+            return redirect('dashboard')
+        else:
+            messages.error(request, "Prosím, vyberte knihu.")
+            return self.get(request)
+
+
+class BookContextMixin:
+    """Mixin, který poskytne aktuální knihu uživatele v pohledech."""
+
+    def get_current_book(self):
+        """Vrátí aktuální knihu uživatele na základě session nebo výběru."""
+        current_book_id = self.request.session.get('current_book_id', None)
+        if current_book_id:
+            try:
+                return Book.objects.get(id=current_book_id, owner=self.request.user)
+            except Book.DoesNotExist:
+                return None
+        return None
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['current_book'] = self.get_current_book()
+        return context
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        current_book = self.get_current_book()
+        if current_book:
+            queryset = queryset.filter(book=current_book)
+        return queryset
+
+
+class TransactionListView(BookContextMixin, FilterView, ListView, LoginRequiredMixin):
     """Umožňuje vytvořit a držet data pro filtrování v seznamu transakcí a umožňuje stránkování v těchto seznamech"""
     model = Transaction
     filterset_class = TransactionFilter
@@ -118,7 +260,7 @@ class TransactionListView(FilterView, ListView):
         return filterset.qs
 
 
-class TransactionCreateView(CreateView):
+class TransactionCreateView(CreateView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli vytvořit novou transakci."""
     model = Transaction
     form_class = TransactionForm
@@ -126,15 +268,19 @@ class TransactionCreateView(CreateView):
     success_url = reverse_lazy('transaction-list')
     # Po vytvoření transakce přesměruje uživatele na 'transaction-list', tzn. "transaction/"
 
+    def form_valid(self, form):
+        form.instance.book = self.get_current_book()  # Přiřadíme aktuální knihu transakci
+        return super().form_valid(form)
 
-class TransactionDetailView(DeleteView):
+
+class TransactionDetailView(DeleteView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli náhled na veškeré informace o transakci."""
     model = Transaction
     template_name = 'budgetlog/transaction_detail.html'
     context_object_name = 'transaction'
 
 
-class TransactionUpdateView(UpdateView):
+class TransactionUpdateView(UpdateView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli upravit existující transakci."""
     model = Transaction
     form_class = TransactionForm
@@ -142,14 +288,14 @@ class TransactionUpdateView(UpdateView):
     success_url = reverse_lazy('transaction-list')
 
 
-class TransactionDeleteView(DeleteView):
+class TransactionDeleteView(DeleteView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli smazat transakci."""
     model = Transaction
     template_name = 'budgetlog/transaction_confirm_delete.html'
     success_url = reverse_lazy('transaction-list')
 
 
-class CategoryListView(ListView):
+class CategoryListView(ListView, LoginRequiredMixin, BookContextMixin):
     """Zobrazí seznam všech kategorií."""
     model = Category
     template_name = 'budgetlog/category_list.html'
@@ -157,7 +303,7 @@ class CategoryListView(ListView):
     ordering = ['name']  # Řazení dle atributu name v modelu Category
 
 
-class CategoryCreateView(CreateView):
+class CategoryCreateView(CreateView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli vytvořit novou kategorii."""
     model = Category
     form_class = CategoryForm
@@ -165,7 +311,7 @@ class CategoryCreateView(CreateView):
     success_url = reverse_lazy('category-list')
 
 
-class CategoryUpdateView(UpdateView):
+class CategoryUpdateView(UpdateView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli upravit existující kategorii."""
     model = Category
     form_class = CategoryForm
@@ -173,14 +319,14 @@ class CategoryUpdateView(UpdateView):
     success_url = reverse_lazy('category-list')
 
 
-class CategoryDeleteView(DeleteView):
+class CategoryDeleteView(DeleteView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli smazat kategorii."""
     model = Category
     template_name = 'budgetlog/category_confirm_delete.html'
     success_url = reverse_lazy('category-list')
 
 
-class AccountListView(ListView):
+class AccountListView(ListView, LoginRequiredMixin, BookContextMixin):
     """Zobrazí seznam všech účtů."""
     model = Account
     template_name = 'budgetlog/account_list.html'
@@ -188,7 +334,7 @@ class AccountListView(ListView):
     ordering = ['name']  # Řazení dle atributu name v modelu Account
 
 
-class AccountCreateView(CreateView):
+class AccountCreateView(CreateView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli vytvořit nový účet."""
     model = Account
     form_class = AccountForm
@@ -196,7 +342,7 @@ class AccountCreateView(CreateView):
     success_url = reverse_lazy('account-list')
 
 
-class AccountUpdateView(UpdateView):
+class AccountUpdateView(UpdateView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli upravit existující účet."""
     model = Account
     form_class = AccountForm
@@ -204,14 +350,14 @@ class AccountUpdateView(UpdateView):
     success_url = reverse_lazy('account-list')
 
 
-class AccountDeleteView(DeleteView):
+class AccountDeleteView(DeleteView, LoginRequiredMixin, BookContextMixin):
     """Umožní uživateli smazat účet."""
     model = Account
     template_name = 'budgetlog/account_confirm_delete.html'
     success_url = reverse_lazy('account-list')
 
 
-class DashboardView(TemplateView):
+class DashboardView(TemplateView, LoginRequiredMixin, BookContextMixin):
     """Templát pro stránku se souhrnnými přehledy."""
     template_name = 'budgetlog/dashboard.html'
 
@@ -229,7 +375,7 @@ class DashboardView(TemplateView):
         return context
 
 
-class MonthDetailView(TemplateView):
+class MonthDetailView(TemplateView, LoginRequiredMixin, BookContextMixin):
     """Templát pro detailní statistiky daného měsíce."""
     template_name = 'budgetlog/monthly_detail.html'
 
@@ -293,7 +439,7 @@ class MonthDetailView(TemplateView):
         return context
 
 
-class YearDetailView(TemplateView):
+class YearDetailView(TemplateView, LoginRequiredMixin, BookContextMixin):
     """Templát pro zobrazení statistik transakcí u vybraného roku."""
     template_name = 'budgetlog/yearly_detail.html'
 
@@ -406,52 +552,3 @@ class YearDetailView(TemplateView):
             'monthly_data_json': json.dumps(monthly_data),
         })
         return context
-
-
-class UserViewRegister(CreateView):
-    form_class = UserForm
-    model = AppUser
-    template_name = 'budgetlog/user_form.html'
-
-    def get(self, request):
-        form = self.form_class(None)
-        return render(request, self.template_name, {"form": form})
-
-    def post(self, request):
-        form = self.form_class(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            password = form.cleaned_data["password"]
-            user.set_password(password)
-            user.save()
-            login(request, user)
-            return redirect('transaction-add')
-        return render(request, self.template_name, {"form": form})
-
-
-class UserViewLogin(CreateView):
-    form_class = LoginForm
-    template_name = 'budgetlog/user_form.html'
-
-    def get(self, request):
-        form = self.form_class(None)
-        return render(request, self.template_name, {"form": form})
-
-    def post(self, request):
-        form = self.form_class(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data["email"]
-            password = form. cleaned_data["password"]
-            user = authenticate(email=email, password=password)
-            if user:
-                login(request, user)
-                return redirect('transaction-add')
-        return render(request, self.template_name, {"form": form})
-
-
-def logout_user(request):
-    if request.user.is_authenticated:
-        logout(request)
-    else:
-        messages.info(request, "Nemůžeš se odhlásit, pokud nejsi přihlášený.")
-    return redirect('login')
