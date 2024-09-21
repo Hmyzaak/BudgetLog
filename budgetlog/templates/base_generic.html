@@ -44,6 +44,9 @@
                             <a class="nav-link" href="{% url 'account-list' %}">Účty</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="{% url 'book-list' %}">Knihy</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="{% url 'logout' %}">Logout</a>
                         </li>
                     </ul>
@@ -65,6 +68,15 @@
     <!-- Hlavní obsah -->
     <main class="flex-shrink-0">
         <div class="container">
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
             {% block content %}
             <!-- Obsah bude vložen zde -->
             {% endblock %}

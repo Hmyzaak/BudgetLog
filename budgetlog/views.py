@@ -2,20 +2,19 @@ from django.db.models import Sum, DecimalField, Q, F, Case, When, Max, Min, Avg,
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django_filters.views import FilterView
 from django.utils.dateformat import format
 from decimal import Decimal
 from datetime import date
-from .models import *
 from .filters import TransactionFilter
 from .forms import *
 import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
-from django.http import Http404
 
 
 # Create your views here.
@@ -42,7 +41,7 @@ class UserViewRegister(CreateView):
             request.session['current_book_id'] = book.id  # Nastavíme novou knihu jako aktuální
 
             login(request, user)
-            return redirect('transaction-add')
+            return redirect('book-list')
         return render(request, self.template_name, {"form": form})
 
 
@@ -62,7 +61,7 @@ class UserViewLogin(CreateView):
             user = authenticate(email=email, password=password)
             if user:
                 login(request, user)
-                return redirect('transaction-add')
+                return redirect('book-list')
         return render(request, self.template_name, {"form": form})
 
 
@@ -72,6 +71,69 @@ def logout_user(request):
     else:
         messages.info(request, "Nemůžeš se odhlásit, pokud nejsi přihlášený.")
     return redirect('login')
+
+
+class BookContextMixin:
+    """Mixin, který poskytne aktuální knihu uživatele v pohledech."""
+
+    def get_current_book(self):
+        """Vrátí aktuální knihu uživatele na základě session nebo výběru."""
+        current_book_id = self.request.session.get('current_book_id', None)
+        if current_book_id:
+            try:
+                return Book.objects.get(id=current_book_id, owner=self.request.user)
+            except Book.DoesNotExist:
+                return None
+        return None
+
+    """def dispatch(self, request, *args, **kwargs):
+        # Zkontroluje, zda má uživatel vybranou knihu.
+        current_book = self.get_current_book()
+        if not current_book:
+            messages.error(request, "Musíte si vybrat knihu, než přejdete na tuto stránku.")
+            # Přesměruje uživatele na stránku pro výběr knihy
+            return redirect(reverse('book-list'))
+        return super().dispatch(request, *args, **kwargs)"""
+
+    def form_valid(self, form):
+        form.instance.book = self.get_current_book()  # Přiřadíme aktuální knihu transakci
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['current_book'] = self.get_current_book()
+        return context
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        current_book = self.get_current_book()
+        if current_book:
+            queryset = queryset.filter(book=current_book)
+        else:
+            queryset = queryset.none()  # Pokud není aktuální kniha, nevrátit nic
+        return queryset
+
+
+class BookObjectMixin(BookContextMixin):
+    # Smazat?
+    """Mixin pro ověření, že objekt (např. transakce, kategorie) patří k vybrané knize."""
+
+    model = None  # Tento atribut bude doplněn ve specifických pohledech
+    book_field = 'book'  # Předpokládané jméno pole, které odkazuje na knihu
+
+    def get_object(self):
+        """Načte objekt a ověří, zda patří do aktuálně vybrané knihy."""
+        current_book = self.get_current_book()
+        if not current_book:
+            messages.error(self.request, "Musíte si vybrat knihu, než přejdete na tuto stránku.")
+            return redirect(reverse('book-list'))
+        obj = get_object_or_404(self.model, pk=self.kwargs['pk'], **{self.book_field: current_book})
+        return obj
+
+    def dispatch(self, request, *args, **kwargs):
+        # Kontrola aktuální knihy proběhne přes get_object (výše)
+        self.object = self.get_object()
+        return super().dispatch(request, *args, **kwargs)
 
 
 class BookListView(LoginRequiredMixin, ListView):
@@ -113,54 +175,25 @@ class BookDeleteView(LoginRequiredMixin, DeleteView):
         return Book.objects.filter(owner=self.request.user)
 
 
-class SelectBookView(LoginRequiredMixin, TemplateView):
-    template_name = 'budgetlog/select_book.html'
+class SelectBookView(LoginRequiredMixin, View):
+    """View pro zpracování výběru knihy uživatelem."""
 
     def get(self, request, *args, **kwargs):
-        books = Book.objects.filter(owner=request.user)
-        if not books:
-            # Pokud uživatel nemá žádné knihy, přesměrujeme ho na vytvoření nové
-            return redirect('book-create')
-        return render(request, self.template_name, {'books': books})
-
-    def post(self, request, *args, **kwargs):
-        book_id = request.POST.get('book_id')
+        # Získání ID knihy z URL
+        book_id = kwargs.get('book_id')
         if book_id:
+            # Ověření, že kniha patří uživateli
             book = get_object_or_404(Book, id=book_id, owner=request.user)
+            # Nastavení aktivní knihy v session
             request.session['current_book_id'] = book.id
-            return redirect('dashboard')
+            # Přesměrování na stránku s transakcemi nebo jinou stránku po výběru knihy
+            return redirect('transaction-list')  # Nebo jiný název URL pro zobrazení transakcí
         else:
-            messages.error(request, "Prosím, vyberte knihu.")
-            return self.get(request)
+            messages.error(request, "Kniha nebyla nalezena.")
+            return redirect('book-list')
 
 
-class BookContextMixin:
-    """Mixin, který poskytne aktuální knihu uživatele v pohledech."""
-
-    def get_current_book(self):
-        """Vrátí aktuální knihu uživatele na základě session nebo výběru."""
-        current_book_id = self.request.session.get('current_book_id', None)
-        if current_book_id:
-            try:
-                return Book.objects.get(id=current_book_id, owner=self.request.user)
-            except Book.DoesNotExist:
-                return None
-        return None
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['current_book'] = self.get_current_book()
-        return context
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        current_book = self.get_current_book()
-        if current_book:
-            queryset = queryset.filter(book=current_book)
-        return queryset
-
-
-class TransactionListView(BookContextMixin, FilterView, ListView, LoginRequiredMixin):
+class TransactionListView(LoginRequiredMixin, BookContextMixin, FilterView, ListView):
     """Umožňuje vytvořit a držet data pro filtrování v seznamu transakcí a umožňuje stránkování v těchto seznamech"""
     model = Transaction
     filterset_class = TransactionFilter
@@ -260,7 +293,7 @@ class TransactionListView(BookContextMixin, FilterView, ListView, LoginRequiredM
         return filterset.qs
 
 
-class TransactionCreateView(CreateView, LoginRequiredMixin, BookContextMixin):
+class TransactionCreateView(BookContextMixin, LoginRequiredMixin, CreateView):
     """Umožní uživateli vytvořit novou transakci."""
     model = Transaction
     form_class = TransactionForm
@@ -268,34 +301,51 @@ class TransactionCreateView(CreateView, LoginRequiredMixin, BookContextMixin):
     success_url = reverse_lazy('transaction-list')
     # Po vytvoření transakce přesměruje uživatele na 'transaction-list', tzn. "transaction/"
 
-    def form_valid(self, form):
-        form.instance.book = self.get_current_book()  # Přiřadíme aktuální knihu transakci
-        return super().form_valid(form)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Předáme aktuální knihu do formuláře
+        kwargs['book'] = self.get_current_book()  # Funkce z BookContextMixin
+        return kwargs
 
 
-class TransactionDetailView(DeleteView, LoginRequiredMixin, BookContextMixin):
+class TransactionDetailView(LoginRequiredMixin, BookContextMixin, DeleteView):
     """Umožní uživateli náhled na veškeré informace o transakci."""
     model = Transaction
     template_name = 'budgetlog/transaction_detail.html'
     context_object_name = 'transaction'
 
+    def dispatch(self, request, *args, **kwargs):
+        current_book = self.get_current_book()
+        transaction = get_object_or_404(Transaction, pk=self.kwargs['pk'], book=current_book)
+        return super().dispatch(request, *args, **kwargs)
 
-class TransactionUpdateView(UpdateView, LoginRequiredMixin, BookContextMixin):
+
+class TransactionUpdateView(LoginRequiredMixin, BookContextMixin, UpdateView):
     """Umožní uživateli upravit existující transakci."""
     model = Transaction
     form_class = TransactionForm
     template_name = 'budgetlog/transaction_form.html'
     success_url = reverse_lazy('transaction-list')
 
+    def dispatch(self, request, *args, **kwargs):
+        current_book = self.get_current_book()
+        transaction = get_object_or_404(Transaction, pk=self.kwargs['pk'], book=current_book)
+        return super().dispatch(request, *args, **kwargs)
 
-class TransactionDeleteView(DeleteView, LoginRequiredMixin, BookContextMixin):
+
+class TransactionDeleteView(LoginRequiredMixin, BookContextMixin, DeleteView):
     """Umožní uživateli smazat transakci."""
     model = Transaction
     template_name = 'budgetlog/transaction_confirm_delete.html'
     success_url = reverse_lazy('transaction-list')
 
+    def dispatch(self, request, *args, **kwargs):
+        current_book = self.get_current_book()
+        transaction = get_object_or_404(Transaction, pk=self.kwargs['pk'], book=current_book)
+        return super().dispatch(request, *args, **kwargs)
 
-class CategoryListView(ListView, LoginRequiredMixin, BookContextMixin):
+
+class CategoryListView(LoginRequiredMixin, BookContextMixin, ListView):
     """Zobrazí seznam všech kategorií."""
     model = Category
     template_name = 'budgetlog/category_list.html'
@@ -303,7 +353,7 @@ class CategoryListView(ListView, LoginRequiredMixin, BookContextMixin):
     ordering = ['name']  # Řazení dle atributu name v modelu Category
 
 
-class CategoryCreateView(CreateView, LoginRequiredMixin, BookContextMixin):
+class CategoryCreateView(LoginRequiredMixin, BookContextMixin, CreateView):
     """Umožní uživateli vytvořit novou kategorii."""
     model = Category
     form_class = CategoryForm
@@ -311,22 +361,32 @@ class CategoryCreateView(CreateView, LoginRequiredMixin, BookContextMixin):
     success_url = reverse_lazy('category-list')
 
 
-class CategoryUpdateView(UpdateView, LoginRequiredMixin, BookContextMixin):
+class CategoryUpdateView(LoginRequiredMixin, BookContextMixin, UpdateView):
     """Umožní uživateli upravit existující kategorii."""
     model = Category
     form_class = CategoryForm
     template_name = 'budgetlog/category_form.html'
     success_url = reverse_lazy('category-list')
 
+    def dispatch(self, request, *args, **kwargs):
+        current_book = self.get_current_book()
+        category = get_object_or_404(Category, pk=self.kwargs['pk'], book=current_book)
+        return super().dispatch(request, *args, **kwargs)
 
-class CategoryDeleteView(DeleteView, LoginRequiredMixin, BookContextMixin):
+
+class CategoryDeleteView(LoginRequiredMixin, BookContextMixin, DeleteView):
     """Umožní uživateli smazat kategorii."""
     model = Category
     template_name = 'budgetlog/category_confirm_delete.html'
     success_url = reverse_lazy('category-list')
 
+    def dispatch(self, request, *args, **kwargs):
+        current_book = self.get_current_book()
+        category = get_object_or_404(Category, pk=self.kwargs['pk'], book=current_book)
+        return super().dispatch(request, *args, **kwargs)
 
-class AccountListView(ListView, LoginRequiredMixin, BookContextMixin):
+
+class AccountListView(LoginRequiredMixin, BookContextMixin, ListView):
     """Zobrazí seznam všech účtů."""
     model = Account
     template_name = 'budgetlog/account_list.html'
@@ -334,7 +394,7 @@ class AccountListView(ListView, LoginRequiredMixin, BookContextMixin):
     ordering = ['name']  # Řazení dle atributu name v modelu Account
 
 
-class AccountCreateView(CreateView, LoginRequiredMixin, BookContextMixin):
+class AccountCreateView(LoginRequiredMixin, BookContextMixin, CreateView):
     """Umožní uživateli vytvořit nový účet."""
     model = Account
     form_class = AccountForm
@@ -342,49 +402,47 @@ class AccountCreateView(CreateView, LoginRequiredMixin, BookContextMixin):
     success_url = reverse_lazy('account-list')
 
 
-class AccountUpdateView(UpdateView, LoginRequiredMixin, BookContextMixin):
+class AccountUpdateView(LoginRequiredMixin, BookContextMixin, UpdateView):
     """Umožní uživateli upravit existující účet."""
     model = Account
     form_class = AccountForm
     template_name = 'budgetlog/account_form.html'
     success_url = reverse_lazy('account-list')
 
+    def dispatch(self, request, *args, **kwargs):
+        current_book = self.get_current_book()
+        account = get_object_or_404(Account, pk=self.kwargs['pk'], book=current_book)
+        return super().dispatch(request, *args, **kwargs)
 
-class AccountDeleteView(DeleteView, LoginRequiredMixin, BookContextMixin):
+
+class AccountDeleteView(LoginRequiredMixin, BookContextMixin, DeleteView):
     """Umožní uživateli smazat účet."""
     model = Account
     template_name = 'budgetlog/account_confirm_delete.html'
     success_url = reverse_lazy('account-list')
 
-
-class DashboardView(TemplateView, LoginRequiredMixin, BookContextMixin):
-    """Templát pro stránku se souhrnnými přehledy."""
-    template_name = 'budgetlog/dashboard.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        transactions = Transaction.objects.all()
-        months_years = transactions.dates('datestamp', 'month', order='DESC')
-        years = transactions.dates('datestamp', 'year', order='DESC')
-
-        context.update({
-            'months_years': months_years,
-            'years': years,
-        })
-
-        return context
+    def dispatch(self, request, *args, **kwargs):
+        current_book = self.get_current_book()
+        account = get_object_or_404(Account, pk=self.kwargs['pk'], book=current_book)
+        return super().dispatch(request, *args, **kwargs)
 
 
-class MonthDetailView(TemplateView, LoginRequiredMixin, BookContextMixin):
+class MonthDetailView(LoginRequiredMixin, BookContextMixin, TemplateView):
     """Templát pro detailní statistiky daného měsíce."""
     template_name = 'budgetlog/monthly_detail.html'
 
     def get_context_data(self, year, month, **kwargs):
         context = super().get_context_data(**kwargs)
+        current_book = self.get_current_book()
+        if not current_book:
+            messages.error(self.request, "Musíte si vybrat knihu.")
+            return redirect('book-list')
+
         transactions = Transaction.objects.filter(
             datestamp__year=year,
-            datestamp__month=month
-        ).order_by('-datestamp')  # Seřazení dle data, nejnovější nahoře
+            datestamp__month=month,
+            book=current_book  # Omezit dotaz na transakce z aktuální knihy
+        ).order_by('-datestamp')
 
         # Výpočet celkových měsíčních příjmů a výdajů
         total_income = transactions.filter(type='income').aggregate(
@@ -412,7 +470,9 @@ class MonthDetailView(TemplateView, LoginRequiredMixin, BookContextMixin):
         output_field=DecimalField(): Zajistí, že výstup agregace je DecimalField.
         Decimal('0'): Výchozí hodnota jako Decimal, aby byla kompatibilní s typem amount.
         """
-        category_summaries = Category.objects.annotate(
+        category_summaries = Category.objects.filter(
+            book=current_book  # Omezit dotaz na kategorie z aktuální knihy
+        ).annotate(
             total=Coalesce(
                 Sum(
                     Case(
@@ -439,14 +499,20 @@ class MonthDetailView(TemplateView, LoginRequiredMixin, BookContextMixin):
         return context
 
 
-class YearDetailView(TemplateView, LoginRequiredMixin, BookContextMixin):
+class YearDetailView(LoginRequiredMixin, BookContextMixin, TemplateView):
     """Templát pro zobrazení statistik transakcí u vybraného roku."""
     template_name = 'budgetlog/yearly_detail.html'
 
     def get_context_data(self, year, **kwargs):
         context = super().get_context_data(**kwargs)
+        current_book = self.get_current_book()
+        if not current_book:
+            messages.error(self.request, "Musíte si vybrat knihu.")
+            return redirect('book-list')
+
         transactions = Transaction.objects.filter(
-            datestamp__year=year
+            datestamp__year=year,
+            book=current_book  # Omezit dotaz na transakce z aktuální knihy
         ).order_by('-datestamp')
 
         # Výpočet celkových ročních příjmů a výdajů
@@ -464,17 +530,14 @@ class YearDetailView(TemplateView, LoginRequiredMixin, BookContextMixin):
         # Získání aktuálního roku a měsíce
         current_year = date.today().year
         current_month = date.today().month
-
-        # Pokud se zpracovává aktuální rok, použijeme aktuální měsíc jako počet měsíců
-        if year == current_year:
-            month_count = current_month
-        else:
-            # Pokud se zpracovává jiný než aktuální rok, použijeme 12 měsíců
-            month_count = 12
+        # Pokud se zpracovává aktuální rok, použijeme aktuální měsíc jako počet měsíců, jinak hodnotu 12
+        month_count = current_month if year == current_year else 12
 
         # Výpočet součtu a průměrné hodnoty transakcí pro každou kategorii
         months = transactions.dates('datestamp', 'month', order='ASC')
-        category_summaries = Category.objects.annotate(
+        category_summaries = Category.objects.filter(
+            book=current_book  # Omezit dotaz na kategorie z aktuální knihy
+        ).annotate(
             total=Coalesce(
                 Sum(
                     Case(
@@ -505,7 +568,9 @@ class YearDetailView(TemplateView, LoginRequiredMixin, BookContextMixin):
         # Výpočet bilance pro každou kategorii každého měsíce v daném roce
         monthly_balances = {category.name: {} for category in category_summaries}
         for month in months:
-            month_balances = Category.objects.annotate(
+            month_balances = Category.objects.filter(
+                book=current_book  # Omezit dotaz na kategorie z aktuální knihy
+            ).annotate(
                 monthly_total=Coalesce(
                     Sum(
                         Case(
@@ -551,4 +616,26 @@ class YearDetailView(TemplateView, LoginRequiredMixin, BookContextMixin):
             'months_json': json.dumps([format(month, 'F') for month in months]),
             'monthly_data_json': json.dumps(monthly_data),
         })
+        return context
+
+
+class DashboardView(LoginRequiredMixin, BookContextMixin, TemplateView):
+    """Templát pro stránku se souhrnnými přehledy."""
+    template_name = 'budgetlog/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        current_book = self.get_current_book()
+        if not current_book:
+            messages.error(self.request, "Musíte si vybrat knihu.")
+            return redirect('book-list')
+        transactions = Transaction.objects.filter(book=current_book)  # Omezit dotaz na transakce z aktuální knihy
+        months_years = transactions.dates('datestamp', 'month', order='DESC')
+        years = transactions.dates('datestamp', 'year', order='DESC')
+
+        context.update({
+            'months_years': months_years,
+            'years': years,
+        })
+
         return context

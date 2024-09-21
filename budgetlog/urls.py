@@ -13,7 +13,7 @@ urlpatterns = [
     path('books/create/', views.BookCreateView.as_view(), name='book-create'),
     path('books/<int:pk>/update/', views.BookUpdateView.as_view(), name='book-update'),
     path('books/<int:pk>/delete/', views.BookDeleteView.as_view(), name='book-delete'),
-    path('select-book/', views.SelectBookView.as_view(), name='select-book'),
+    path('select-book/<int:book_id>/', views.SelectBookView.as_view(), name='select-book'),
     # URL pro trasakce
     path('transactions/', views.TransactionListView.as_view(), name='transaction-list'),
     path('transactions/add/', views.TransactionCreateView.as_view(), name='transaction-add'),

@@ -5,7 +5,7 @@
   <ul>
     {% for book in books %}
       <li>
-        <a href="{% url 'select-book' book_id=book.id %}">{{ book.name }}</a>
+        <a href="{% url 'select-book' book_id=book.id %}">Vybrat knihu: {{ book.name }}</a>
         (<a href="{% url 'book-update' pk=book.id %}">Upravit</a>,
          <a href="{% url 'book-delete' pk=book.id %}">Smazat</a>)
       </li>

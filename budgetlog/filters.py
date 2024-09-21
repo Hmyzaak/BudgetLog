@@ -31,12 +31,12 @@ class TransactionFilter(django_filters.FilterSet):
 
     # Kategorie a účet
     category = django_filters.ModelChoiceFilter(
-        queryset=Category.objects.all(),
+        queryset=Category.objects.none(),  # Prázdný queryset, bude nastaven dynamicky
         label='Kategorie',
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     account = django_filters.ModelChoiceFilter(
-        queryset=Account.objects.all(),
+        queryset=Account.objects.none(),  # Prázdný queryset, bude nastaven dynamicky
         label='Účet',
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -48,6 +48,16 @@ class TransactionFilter(django_filters.FilterSet):
         label='Popis obsahuje',
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
+
+    def __init__(self, *args, **kwargs):
+        # Získání aktuální knihy z kwargs
+        book = kwargs.pop('book', None)
+        super().__init__(*args, **kwargs)
+
+        if book:
+            # Nastavení querysetu na kategorie a účty pouze z aktuální knihy
+            self.filters['category'].queryset = Category.objects.filter(book=book)
+            self.filters['account'].queryset = Account.objects.filter(book=book)
 
     class Meta:
         model = Transaction
