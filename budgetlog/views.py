@@ -11,38 +11,34 @@ from decimal import Decimal
 from datetime import date
 from .filters import TransactionFilter
 from .forms import *
-import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
-
+import json
+import random
 
 # Create your views here.
 # Všechny třídy dědí z generických View podle toho, co s daným modelem mají dělat.
 class UserViewRegister(CreateView):
-    form_class = UserForm
+    form_class = UserRegistrationForm
     model = AppUser
     template_name = 'budgetlog/user_form.html'
 
     def get(self, request):
         form = self.form_class(None)
-        return render(request, self.template_name, {"form": form})
+        return render(request, self.template_name, {"form": form, "title": "Registrace"})
 
     def post(self, request):
         form = self.form_class(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            password = form.cleaned_data["password"]
+            password = form.cleaned_data.get('password1')  # Správné heslo z validovaných dat
             user.set_password(password)
             user.save()
 
-            # Po uložení uživatele mu vytvoříme knihu
-            book = Book.objects.create(name="Moje kniha", owner=user)
-            request.session['current_book_id'] = book.id  # Nastavíme novou knihu jako aktuální
-
             login(request, user)
-            return redirect('book-list')
-        return render(request, self.template_name, {"form": form})
+            return redirect('setup-book')  # Přesměrování na stránku pro vytvoření knihy, kategorií a účtu
+        return render(request, self.template_name, {"form": form, "title": "Registrace"})
 
 
 class UserViewLogin(CreateView):
@@ -51,7 +47,7 @@ class UserViewLogin(CreateView):
 
     def get(self, request):
         form = self.form_class(None)
-        return render(request, self.template_name, {"form": form})
+        return render(request, self.template_name, {"form": form, "title": "Přihlášení"})
 
     def post(self, request):
         form = self.form_class(request.POST)
@@ -62,7 +58,7 @@ class UserViewLogin(CreateView):
             if user:
                 login(request, user)
                 return redirect('book-list')
-        return render(request, self.template_name, {"form": form})
+        return render(request, self.template_name, {"form": form, "title": "Přihlášení"})
 
 
 def logout_user(request):
@@ -71,6 +67,51 @@ def logout_user(request):
     else:
         messages.info(request, "Nemůžeš se odhlásit, pokud nejsi přihlášený.")
     return redirect('login')
+
+
+class SetupBookView(LoginRequiredMixin, CreateView):
+    template_name = 'budgetlog/setup_book.html'
+    context_object_name = 'setup-book'
+
+    def get(self, request):
+        # Navrhneme defaultní kategorie
+        default_categories = ['Jídlo', 'Bydlení', 'Doprava', 'Zábava']
+        return render(request, self.template_name, {'categories': default_categories})
+
+    def post(self, request):
+        book_name = request.POST.get('book_name', 'Základní kniha')
+        selected_categories = request.POST.getlist('categories')
+        custom_categories = request.POST.get('custom_categories')
+        account_name = request.POST.get('account_name', 'Základní účet')
+
+        if not selected_categories and not custom_categories:
+            messages.error(request, 'Musíte vybrat alespoň jednu kategorii.')
+            return redirect('setup-book')
+
+        # Vytvoření knihy
+        book = Book.objects.create(name=book_name, owner=request.user)
+        request.session['current_book_id'] = book.id
+
+        # Funkce pro vytvoření kategorie s náhodnou barvou
+        def create_category(category_name, book):
+            color = "#{:06x}".format(random.randint(0, 0xFFFFFF))
+            Category.objects.create(name=category_name.strip(), color=color, book=book)
+
+        # Vytvoření vybraných kategorií
+        if selected_categories:
+            for category_name in selected_categories:
+                create_category(category_name, book)
+
+        # Vytvoření vlastních kategorií, pokud byly zadány
+        if custom_categories:
+            custom_category_names = [name.strip() for name in custom_categories.split(',') if name.strip()]
+            for category_name in custom_category_names:
+                create_category(category_name, book)
+
+        # Vytvoření účtu
+        Account.objects.create(name=account_name, book=book)
+
+        return redirect('transaction-list')  # Po dokončení nastavení přesměrujeme uživatele na seznam transakcí
 
 
 class BookContextMixin:

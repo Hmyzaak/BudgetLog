@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
 from .models import *
 
 
@@ -52,12 +53,21 @@ class AccountForm(forms.ModelForm):
         widgets = {'description': forms.Textarea(attrs={'rows': 1})}
 
 
-class UserForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput)
-
+class UserRegistrationForm(UserCreationForm):
     class Meta:
         model = AppUser
-        fields = ["email", "password"]
+        fields = ['email']  # Zobrazujeme jen email, hesla jsou již obsažena v UserCreationForm
+
+    # Přidáme vlastní validaci hesla
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 != password2:
+            raise forms.ValidationError("Zadaná hesla se neshodují.")
+
+        return cleaned_data
 
 
 class LoginForm(forms.Form):

@@ -55,7 +55,7 @@ class AppUser(AbstractBaseUser):
 class Book(models.Model):
     """Model reprezentující knihu záznamů pro uživatele."""
 
-    name = models.CharField(max_length=100, unique=True, verbose_name="Jméno knihy", help_text="Uveďte jméno knihy")
+    name = models.CharField(max_length=100, verbose_name="Jméno knihy", help_text="Uveďte jméno knihy")
     description = models.TextField(null=True, blank=True, verbose_name="Popis knihy",
                                    help_text="Popis knihy (volitelný)")
     owner = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='books',
@@ -76,15 +76,16 @@ class Account(models.Model):
     class Meta:
         verbose_name = "Účet"
         verbose_name_plural = "Účty"
+        unique_together = ('name', 'book')
 
-    name = models.CharField(max_length=100, unique=True, verbose_name="Jméno účtu",
+    name = models.CharField(max_length=100, verbose_name="Jméno účtu",
                             help_text="Uveď jméno či označení účtu")
     description = models.TextField(null=True, blank=True, verbose_name="Popis účtu",
                                    help_text="Detailnější popis účtu (volitelný)")
     """null=True umožňuje, aby pole mohlo být v databázi prázdné, a blank=True umožňuje, aby pole mohlo být ponecháno 
     prázdné ve formulářích."""
 
-    book = models.ForeignKey(Book, null=True, on_delete=models.CASCADE, verbose_name="Kniha",
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha",
                              help_text="Vyberte knihu, ke které patří tento účet")
 
     def __str__(self):
@@ -97,15 +98,16 @@ class Category(models.Model):
     class Meta:
         verbose_name = "Kategorie"
         verbose_name_plural = "Kategorie"
+        unique_together = ('name', 'book')
 
-    name = models.CharField(max_length=200, unique=True, verbose_name="Název",
+    name = models.CharField(max_length=200, verbose_name="Název",
                             help_text="Uveď název kategorie pro transakce (např. potraviny, doprava, zábava)")
     color = models.CharField(max_length=7, default='#000000', verbose_name="Barva kategorie",
                              help_text="Barva kategorie pro zobrazení v grafu ročního přehledu")
     description = models.TextField(null=True, blank=True, verbose_name="Popis",
                                    help_text="Detailnější popis kategorie pro transakce (volitelný)")
 
-    book = models.ForeignKey(Book, null=True, on_delete=models.CASCADE, verbose_name="Kniha",
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha", related_name='categories',
                              help_text="Vyberte knihu, ke které patří tato kategorie")
 
     def __str__(self):
@@ -125,7 +127,7 @@ class Transaction(models.Model):
     )
     # Definuje tuple pro typ transakce, který voláme níže
 
-    book = models.ForeignKey(Book, null=True, on_delete=models.CASCADE, verbose_name="Kniha",
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha",
                              help_text="Vyberte knihu, ke které patří tato transakce")
 
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Částka",

@@ -37,6 +37,7 @@ urlpatterns = [
     path('dashboard/year/<int:year>/', views.YearDetailView.as_view(), name='year-detail'),
     # URL pro uživatele
     path('register/', views.UserViewRegister.as_view(), name='registration'),
+    path('setup-book/', views.SetupBookView.as_view(), name='setup-book'),
     path('login/', views.UserViewLogin.as_view(), name='login'),
     path('logout/', views.logout_user, name='logout'),
 ]
