@@ -7,6 +7,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, T
 from django.urls import reverse, reverse_lazy
 from django_filters.views import FilterView
 from django.utils.dateformat import format
+from django.http import HttpResponse
 from decimal import Decimal
 from datetime import date
 from .filters import TransactionFilter
@@ -16,6 +17,9 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 import json
 import random
+import csv
+from io import StringIO, TextIOWrapper
+
 
 # Create your views here.
 # Všechny třídy dědí z generických View podle toho, co s daným modelem mají dělat.
@@ -607,3 +611,45 @@ class DashboardView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixi
             'years': years,
         })
         return context
+
+
+class ExportTransactionsCSVView(LoginRequiredMixin, BookContextMixin, FilterView):
+    filterset_class = TransactionFilter
+
+    def get_queryset(self):
+        # Použití stejné logiky filtrace jako v TransactionListView
+        filterset = TransactionFilter(self.request.GET,
+                                      queryset=Transaction.objects.filter(book=self.get_current_book()))
+        return filterset.qs
+
+    def get(self, request, *args, **kwargs):
+        # Vytvoření CSV souboru na základě filtrování
+        queryset = self.get_queryset()
+
+        # Příprava HTTP odpovědi
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="transactions_export.csv"'
+
+        # Použití StringIO pro zápis do paměti
+        output = StringIO()
+
+        # Vytvoření CSV writeru s obalením do UTF-8 pomocí TextIOWrapper
+        writer = csv.writer(output)
+        # Zápis hlavičky do CSV
+        writer.writerow(['Datum', 'Kategorie', 'Částka', 'Účet', 'Popis', 'Typ', 'Kniha'])
+
+        # Zápis dat do CSV
+        for transaction in queryset:
+            writer.writerow([
+                transaction.datestamp,
+                transaction.category.name,
+                transaction.adjusted_amount,
+                transaction.account.name,
+                transaction.description,
+                transaction.type,
+                transaction.book,
+            ])
+
+        # Vrácení CSV výstupu ve správném kódování UTF-8
+        response.write(output.getvalue().encode('utf-8-sig'))
+        return response

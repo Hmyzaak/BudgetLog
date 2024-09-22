@@ -1,6 +1,7 @@
 from django.urls import path
 from . import url_handlers
 from . import views
+from .views import ExportTransactionsCSVView
 
 """
 Definujeme URL vzory pro všechny naše views.
@@ -20,6 +21,7 @@ urlpatterns = [
     path('transactions/edit/<int:pk>/', views.TransactionUpdateView.as_view(), name='transaction-edit'),
     path('transactions/delete/<int:pk>/', views.TransactionDeleteView.as_view(), name='transaction-delete'),
     path('transaction/<int:pk>/', views.TransactionDetailView.as_view(), name='transaction-detail'),
+    path('transactions/export/', ExportTransactionsCSVView.as_view(), name='export-transactions-csv'),
     # URL pro kategorie
     path('categories/', views.CategoryListView.as_view(), name='category-list'),
     path('categories/add/', views.CategoryCreateView.as_view(), name='category-add'),
