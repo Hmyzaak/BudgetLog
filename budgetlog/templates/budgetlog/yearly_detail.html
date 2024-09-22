@@ -88,7 +88,11 @@
         {% endfor %}
     </div>
 </div>
-
+<script>
+    console.log("Categories JSON:", JSON.parse('{{ categories_json|escapejs }}'));
+    console.log("Months JSON:", JSON.parse('{{ months_json|escapejs }}'));
+    console.log("Monthly Data JSON:", JSON.parse('{{ monthly_data_json|escapejs }}'));
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const ctx = document.getElementById('transactionsChart').getContext('2d');

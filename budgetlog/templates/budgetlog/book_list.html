@@ -1,15 +1,30 @@
 {% extends 'base_generic.html' %}
 
 {% block content %}
-  <h1>Vaše knihy</h1>
-  <ul>
-    {% for book in books %}
-      <li>
-        <a href="{% url 'select-book' book_id=book.id %}">Vybrat knihu: {{ book.name }}</a>
-        (<a href="{% url 'book-update' pk=book.id %}">Upravit</a>,
-         <a href="{% url 'book-delete' pk=book.id %}">Smazat</a>)
-      </li>
-    {% endfor %}
-  </ul>
-  <a href="{% url 'book-create' %}">Vytvořit novou knihu</a>
+<h1>Vaše knihy</h1>
+<div class="d-grid gap-2 d-md-block">
+    <a href="{% url 'book-create' %}" class="btn btn-primary">Vytvořit novou knihu</a>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Kniha</th>
+            <th>Akce</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for book in books %}
+            <tr>
+                <td>
+                  <a href="{% url 'select-book' book_id=book.id %}" class="btn btn-info">Vybrat knihu: {{ book.name }}</a>
+                </td>
+                <td>
+                    <a href="{% url 'book-update' pk=book.id %}" class="btn btn-secondary btn-sm">Upravit</a>
+                    <a href="{% url 'book-delete' pk=book.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}
