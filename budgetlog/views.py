@@ -194,23 +194,20 @@ class SelectBookView(LoginRequiredMixin, View):
 
 
 class TransactionListView(LoginRequiredMixin, BookContextMixin, FilterView, ListView):
-    """Umožňuje vytvořit a držet data pro filtrování v seznamu transakcí a umožňuje stránkování v těchto seznamech"""
+    """Umožňuje vytvořit a držet data pro filtrování v seznamu transakcí a umožňuje stránkování v těchto seznamech."""
     model = Transaction
     filterset_class = TransactionFilter
     template_name = 'budgetlog/transaction_list.html'
     context_object_name = 'transactions'
-    # nastavuje název proměnné, která bude použita v šabloně pro přístup k seznamu transakcí: Výchozí název proměnné
-    # by byl object_list
-    paginate_by = 30  # Počet transakcí na stránku
-    ordering = ['-datestamp']  # Řazení transakcí podle data od nejnovějších
+    paginate_by = 30
+    ordering = ['-datestamp']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        filterset = self.filterset_class(self.request.GET, queryset=self.get_queryset())
+        filterset = self.filterset_class(self.request.GET, queryset=self.get_queryset(), book=self.get_current_book())
         context['filter'] = filterset
 
         filtered_qs = filterset.qs
-
         paginator = Paginator(filtered_qs, self.paginate_by)
         page = self.request.GET.get('page')
 
@@ -223,74 +220,58 @@ class TransactionListView(LoginRequiredMixin, BookContextMixin, FilterView, List
 
         context['transactions'] = transactions
 
-        # Přidání maximální částky do kontextu
-        max_amount = Transaction.objects.aggregate(Max('amount'))['amount__max']
-        context['max_amount'] = max_amount
-
-        # Načtení aktuálních hodnot z GET parametrů, pokud jsou k dispozici
-        min_amount = self.request.GET.get('amount_min', 0)
-        max_amount = self.request.GET.get('amount_max', max_amount)
-
-        context['amount_min'] = min_amount
-        context['amount_max'] = max_amount
-
-        average_amount = filtered_qs.aggregate(
-            avg_amount=Avg(
-                Case(
-                    When(type='expense', then=F('amount') * Value(-1)),
-                    default=F('amount'),
-                    output_field=DecimalField()
-                )
-            )
-        )['avg_amount'] or 0
-        context['average_amount'] = average_amount
-
-        # Výpočet nejvyšší částky
-        max_transaction_amount = filtered_qs.aggregate(
-            max_amount=Max(
-                Case(
-                    When(type='expense', then=F('amount') * Value(-1)),
-                    default=F('amount'),
-                    output_field=DecimalField()
-                )
-            )
-        )['max_amount'] or 0
-        context['max_transaction_amount'] = max_transaction_amount
-
-        # Výpočet nejnižší částky
-        min_transaction_amount = filtered_qs.aggregate(
-            min_amount=Min(
-                Case(
-                    When(type='expense', then=F('amount') * Value(-1)),
-                    default=F('amount'),
-                    output_field=DecimalField()
-                )
-            )
-        )['min_amount'] or 0
-        context['min_transaction_amount'] = min_transaction_amount
-
-        # Výpočet bilance (suma příjmů - suma výdajů)
-        balance = filtered_qs.aggregate(
-            total_balance=Sum(
-                Case(
-                    When(type='expense', then=F('amount') * Value(-1)),
-                    default=F('amount'),
-                    output_field=DecimalField()
-                )
-            )
-        )['total_balance'] or 0
-        context['balance'] = balance
-
-        # Počet filtrovaných transakcí
-        transaction_count = filtered_qs.aggregate(count=Count('id'))['count']
-        context['transaction_count'] = transaction_count
+        # Přidání dalších dat do kontextu (např. bilance, max/min částky atd.)
+        context.update(self.get_additional_context_data(filtered_qs))
 
         return context
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        filterset = self.filterset_class(self.request.GET, queryset=queryset)
+        filterset = self.filterset_class(self.request.GET, queryset=queryset, book=self.get_current_book())
         return filterset.qs
+
+    def get_additional_context_data(self, filtered_qs):
+        # Výpočet agregátů (např. průměr, max/min částka) a jejich přidání do kontextu
+        return {
+            'max_amount': Transaction.objects.aggregate(Max('amount'))['amount__max'],
+            'average_amount': filtered_qs.aggregate(
+                avg_amount=Avg(
+                    Case(
+                        When(type='expense', then=F('amount') * Value(-1)),
+                        default=F('amount'),
+                        output_field=DecimalField()
+                    )
+                )
+            )['avg_amount'] or 0,
+            'max_transaction_amount': filtered_qs.aggregate(
+                max_amount=Max(
+                    Case(
+                        When(type='expense', then=F('amount') * Value(-1)),
+                        default=F('amount'),
+                        output_field=DecimalField()
+                    )
+                )
+            )['max_amount'] or 0,
+            'min_transaction_amount': filtered_qs.aggregate(
+                min_amount=Min(
+                    Case(
+                        When(type='expense', then=F('amount') * Value(-1)),
+                        default=F('amount'),
+                        output_field=DecimalField()
+                    )
+                )
+            )['min_amount'] or 0,
+            'balance': filtered_qs.aggregate(
+                total_balance=Sum(
+                    Case(
+                        When(type='expense', then=F('amount') * Value(-1)),
+                        default=F('amount'),
+                        output_field=DecimalField()
+                    )
+                )
+            )['total_balance'] or 0,
+            'transaction_count': filtered_qs.aggregate(count=Count('id'))['count']
+        }
 
 
 class TransactionCreateView(BookContextMixin, LoginRequiredMixin, CreateView):
