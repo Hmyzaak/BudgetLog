@@ -1,0 +1,11 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+    <h1>Smazat {{ object_type }}</h1>
+    <p>Opravdu chcete smazat {{ object_type }}?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Ano, smazat</button>
+    </form>
+    <a href="{% url list_url_name %}" class="btn btn-danger">Ne, vrátit se zpět</a>
+{% endblock %}
