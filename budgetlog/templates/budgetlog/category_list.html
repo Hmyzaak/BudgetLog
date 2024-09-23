@@ -23,7 +23,9 @@
                 </td>
                 <td>
                     <a href="{% url 'category-edit' category.id %}" class="btn btn-secondary btn-sm">Upravit</a>
-                    <a href="{% url 'category-delete' category.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                    {% if not category.is_default %}
+                        <a href="{% url 'category-delete' category.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                    {% endif %}
                 </td>
             </tr>
         {% endfor %}
