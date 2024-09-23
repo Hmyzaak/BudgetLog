@@ -84,9 +84,10 @@ class Account(models.Model):
                                    help_text="Detailnější popis účtu (volitelný)")
     """null=True umožňuje, aby pole mohlo být v databázi prázdné, a blank=True umožňuje, aby pole mohlo být ponecháno 
     prázdné ve formulářích."""
-
     book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha",
                              help_text="Vyberte knihu, ke které patří tento účet")
+    is_default = models.BooleanField(
+        default=False)  # Přidání příznaku pro výchozí kategorii, hodnota True umožní nesmazatelnost
 
     def __str__(self):
         """Textová reprezentace modelu Account"""
@@ -106,9 +107,9 @@ class Category(models.Model):
                              help_text="Barva kategorie pro zobrazení v grafu ročního přehledu")
     description = models.TextField(null=True, blank=True, verbose_name="Popis",
                                    help_text="Detailnější popis kategorie pro transakce (volitelný)")
-
     book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha", related_name='categories',
                              help_text="Vyberte knihu, ke které patří tato kategorie")
+    is_default = models.BooleanField(default=False)  # Přidání příznaku pro výchozí kategorii, hodnota True umožní nesmazatelnost
 
     def __str__(self):
         """Textová reprezentace modelu Category."""

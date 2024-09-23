@@ -7,7 +7,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, T
 from django.urls import reverse, reverse_lazy
 from django_filters.views import FilterView
 from django.utils.dateformat import format
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from decimal import Decimal
 from datetime import date
 from .filters import TransactionFilter
@@ -455,8 +455,22 @@ class TransactionDeleteView(BookContextMixin, GenericDeleteView):
 class CategoryDeleteView(BookContextMixin, GenericDeleteView):
     model = Category
 
+    def dispatch(self, request, *args, **kwargs):
+        category = self.get_object()
+        if category.is_default:
+            # Zamezit mazání výchozí kategorie
+            return HttpResponseForbidden("Tuto kategorii nelze smazat.")
+        return super().dispatch(request, *args, **kwargs)
+
 class AccountDeleteView(BookContextMixin, GenericDeleteView):
     model = Account
+
+    def dispatch(self, request, *args, **kwargs):
+        account = self.get_object()
+        if account.is_default:
+            # Zamezit mazání výchozí kategorie
+            return HttpResponseForbidden("Tento účet nelze smazat.")
+        return super().dispatch(request, *args, **kwargs)
 
 
 class MonthDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixin, TemplateView):
