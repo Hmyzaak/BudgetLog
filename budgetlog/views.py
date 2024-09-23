@@ -161,17 +161,6 @@ class BookListView(LoginRequiredMixin, ListView):
         return Book.objects.filter(owner=self.request.user)
 
 
-class BookCreateView(LoginRequiredMixin, CreateView):
-    model = Book
-    fields = ['name', 'description']
-    template_name = 'budgetlog/book_form.html'
-    success_url = reverse_lazy('book-list')
-
-    def form_valid(self, form):
-        form.instance.owner = self.request.user
-        return super().form_valid(form)
-
-
 class SelectBookView(LoginRequiredMixin, View):
     """View pro zpracování výběru knihy uživatelem."""
 
@@ -320,21 +309,6 @@ class TransactionListView(LoginRequiredMixin, BookContextMixin, TransactionSumma
         return context
 
 
-class TransactionCreateView(BookContextMixin, LoginRequiredMixin, CreateView):
-    """Umožní uživateli vytvořit novou transakci."""
-    model = Transaction
-    form_class = TransactionForm
-    template_name = 'budgetlog/transaction_form.html'
-    success_url = reverse_lazy('transaction-list')
-    # Po vytvoření transakce přesměruje uživatele na 'transaction-list', tzn. "transaction/"
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        # Předáme aktuální knihu do formuláře
-        kwargs['book'] = self.get_current_book()  # Funkce z BookContextMixin
-        return kwargs
-
-
 class TransactionDetailView(LoginRequiredMixin, BookContextMixin, DeleteView):
     """Umožní uživateli náhled na veškeré informace o transakci."""
     model = Transaction
@@ -355,14 +329,6 @@ class CategoryListView(LoginRequiredMixin, BookContextMixin, ListView):
     ordering = ['name']  # Řazení dle atributu name v modelu Category
 
 
-class CategoryCreateView(LoginRequiredMixin, BookContextMixin, CreateView):
-    """Umožní uživateli vytvořit novou kategorii."""
-    model = Category
-    form_class = CategoryForm
-    template_name = 'budgetlog/category_form.html'
-    success_url = reverse_lazy('category-list')
-
-
 class AccountListView(LoginRequiredMixin, BookContextMixin, ListView):
     """Zobrazí seznam všech účtů."""
     model = Account
@@ -371,61 +337,101 @@ class AccountListView(LoginRequiredMixin, BookContextMixin, ListView):
     ordering = ['name']  # Řazení dle atributu name v modelu Account
 
 
-class AccountCreateView(LoginRequiredMixin, BookContextMixin, CreateView):
-    """Umožní uživateli vytvořit nový účet."""
-    model = Account
-    form_class = AccountForm
-    template_name = 'budgetlog/account_form.html'
-    success_url = reverse_lazy('account-list')
+class BookCreateView(LoginRequiredMixin, CreateView):
+    model = Book
+    fields = ['name', 'description']
+    template_name = 'budgetlog/object_form.html'
+    success_url = reverse_lazy('book-list')
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['object_type'] = self.model._meta.verbose_name
+        context['list_url_name'] = f'{self.model._meta.model_name}-list'
+        return context
 
 
 class BookUpdateView(LoginRequiredMixin, UpdateView):
     model = Book
     fields = ['name', 'description']
-    template_name = 'budgetlog/book_form.html'
+    template_name = 'budgetlog/object_form.html'
     success_url = reverse_lazy('book-list')
 
     def get_queryset(self):
         return Book.objects.filter(owner=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['object_type'] = self.model._meta.verbose_name
+        context['list_url_name'] = f'{self.model._meta.model_name}-list'
+        return context
 
-class TransactionUpdateView(LoginRequiredMixin, BookContextMixin, UpdateView):
-    """Umožní uživateli upravit existující transakci."""
+
+class ObjectFormView(LoginRequiredMixin, BookContextMixin):
+    template_name = 'budgetlog/object_form.html'
+
+    def get_success_url(self):
+        """Vrátí URL na seznam objektů po úspěšném smazání."""
+        model_name = self.model.__name__.lower()
+        return reverse_lazy(f'{model_name}-list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['object_type'] = self.model._meta.verbose_name
+        context['list_url_name'] = f'{self.model._meta.model_name}-list'
+        return context
+
+    def dispatch(self, request, *args, **kwargs):
+        # Ověříme, zda tato třída dědí z UpdateView (u CreateView by vyhazovala KeyError)
+        if issubclass(self.__class__, UpdateView):
+            current_book = self.get_current_book()
+            obj = get_object_or_404(self.model, pk=self.kwargs['pk'], book=current_book)
+        return super().dispatch(request, *args, **kwargs)
+
+
+class TransactionCreateView(ObjectFormView, CreateView):
     model = Transaction
     form_class = TransactionForm
-    template_name = 'budgetlog/transaction_form.html'
-    success_url = reverse_lazy('transaction-list')
 
-    def dispatch(self, request, *args, **kwargs):
-        current_book = self.get_current_book()
-        transaction = get_object_or_404(Transaction, pk=self.kwargs['pk'], book=current_book)
-        return super().dispatch(request, *args, **kwargs)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Předáme aktuální knihu do formuláře
+        kwargs['book'] = self.get_current_book()  # Funkce z BookContextMixin
+        return kwargs
 
 
-class CategoryUpdateView(LoginRequiredMixin, BookContextMixin, UpdateView):
-    """Umožní uživateli upravit existující kategorii."""
+class CategoryCreateView(ObjectFormView, CreateView):
     model = Category
     form_class = CategoryForm
-    template_name = 'budgetlog/category_form.html'
-    success_url = reverse_lazy('category-list')
-
-    def dispatch(self, request, *args, **kwargs):
-        current_book = self.get_current_book()
-        category = get_object_or_404(Category, pk=self.kwargs['pk'], book=current_book)
-        return super().dispatch(request, *args, **kwargs)
 
 
-class AccountUpdateView(LoginRequiredMixin, BookContextMixin, UpdateView):
-    """Umožní uživateli upravit existující účet."""
+class AccountCreateView(ObjectFormView, CreateView):
     model = Account
     form_class = AccountForm
-    template_name = 'budgetlog/account_form.html'
-    success_url = reverse_lazy('account-list')
 
-    def dispatch(self, request, *args, **kwargs):
-        current_book = self.get_current_book()
-        account = get_object_or_404(Account, pk=self.kwargs['pk'], book=current_book)
-        return super().dispatch(request, *args, **kwargs)
+
+class TransactionUpdateView(ObjectFormView, UpdateView):
+    model = Transaction
+    form_class = TransactionForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Předáme aktuální knihu do formuláře
+        kwargs['book'] = self.get_current_book()
+        return kwargs
+
+
+class CategoryUpdateView(ObjectFormView, UpdateView):
+    model = Category
+    form_class = CategoryForm
+
+
+class AccountUpdateView(ObjectFormView, UpdateView):
+    model = Account
+    form_class = AccountForm
 
 
 class GenericDeleteView(LoginRequiredMixin, DeleteView):
@@ -436,21 +442,34 @@ class GenericDeleteView(LoginRequiredMixin, DeleteView):
         model_name = self.model.__name__.lower()
         return reverse_lazy(f'{model_name}-list')
 
-    def get_queryset(self):
-        current_book = self.get_current_book()
-        return self.model.objects.filter(book=current_book)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['object_type'] = self.model._meta.verbose_name
         context['list_url_name'] = f'{self.model._meta.model_name}-list'
         return context
 
+
 class BookDeleteView(GenericDeleteView):
     model = Book
 
+    def delete(self, request, *args, **kwargs):
+        book = self.get_object()
+
+        # Získat výchozí kategorii a účet pro danou knihu
+        default_category = Category.objects.get(book=book, is_default=True)
+        default_account = Account.objects.get(book=book, is_default=True)
+
+        # Aktualizovat transakce spojené s touto knihou
+        Transaction.objects.filter(category__book=book).update(category=default_category)
+        Transaction.objects.filter(account__book=book).update(account=default_account)
+
+        # Pokud je potřeba knihu archivovat nebo smazat
+        return super().delete(request, *args, **kwargs)
+
+
 class TransactionDeleteView(BookContextMixin, GenericDeleteView):
     model = Transaction
+
 
 class CategoryDeleteView(BookContextMixin, GenericDeleteView):
     model = Category
@@ -462,13 +481,14 @@ class CategoryDeleteView(BookContextMixin, GenericDeleteView):
             return HttpResponseForbidden("Tuto kategorii nelze smazat.")
         return super().dispatch(request, *args, **kwargs)
 
+
 class AccountDeleteView(BookContextMixin, GenericDeleteView):
     model = Account
 
     def dispatch(self, request, *args, **kwargs):
         account = self.get_object()
         if account.is_default:
-            # Zamezit mazání výchozí kategorie
+            # Zamezit mazání výchozího účtu
             return HttpResponseForbidden("Tento účet nelze smazat.")
         return super().dispatch(request, *args, **kwargs)
 

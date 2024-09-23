@@ -2,15 +2,16 @@
 {% load crispy_forms_tags %}
 {% block content %}
     <h1>
-        {% if form.instance.pk %}
-            Upravit
-        {% else %}
-            Přidat
-        {% endif %} účet
+        {% if form.instance.pk %}Upravit
+        {% else %}Přidat
+        {% endif %} {{ object_type }}
     </h1>
     <form method="post">
         {% csrf_token %}
         {{ form|crispy }}
-        <button type="submit" class="btn btn-primary">Uložit</button>
+        <div class="d-grid gap-2 d-md-block">
+            <button type="submit" class="btn btn-primary">Uložit</button>
+            <a href="{% url list_url_name %}" class="btn btn-secondary">Zpět</a>
+        </div>
     </form>
 {% endblock %}

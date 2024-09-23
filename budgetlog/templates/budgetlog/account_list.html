@@ -19,7 +19,9 @@
                 <td>{{ account.name }}</td>
                 <td>
                     <a href="{% url 'account-edit' account.id %}" class="btn btn-secondary btn-sm">Upravit</a>
-                    <a href="{% url 'account-delete' account.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                    {% if not account.is_default %}
+                        <a href="{% url 'account-delete' account.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                    {% endif %}
                 </td>
             </tr>
         {% endfor %}

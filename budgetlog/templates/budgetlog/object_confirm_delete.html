@@ -5,7 +5,9 @@
     <p>Opravdu chcete smazat {{ object_type }}?</p>
     <form method="post">
         {% csrf_token %}
-        <button type="submit" class="btn btn-primary">Ano, smazat</button>
+        <div class="d-grid gap-2 d-md-block">
+            <button type="submit" class="btn btn-primary">Ano, smazat</button>
+            <a href="{% url list_url_name %}" class="btn btn-danger">Ne, vrátit se zpět</a>
+        </div>
     </form>
-    <a href="{% url list_url_name %}" class="btn btn-danger">Ne, vrátit se zpět</a>
 {% endblock %}
