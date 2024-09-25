@@ -360,6 +360,7 @@ class ObjectListView(LoginRequiredMixin, BookContextMixin, ListView):
         context['delete_url_name'] = f'{self.model._meta.model_name}-delete'
         return context
 
+
 class BookListView(ObjectListView):
     model = Book
     ordering = ['name']  # Řazení dle atributu name v modelu
@@ -367,10 +368,12 @@ class BookListView(ObjectListView):
     def get_queryset(self):
         return Book.objects.filter(owner=self.request.user)
 
+
 class CategoryListView(ObjectListView):
     """Zobrazí seznam všech kategorií."""
     model = Category
     ordering = ['name']  # Řazení dle atributu name v modelu Category
+
 
 class AccountListView(ObjectListView):
     """Zobrazí seznam všech účtů."""
