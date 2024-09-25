@@ -118,15 +118,6 @@ class SetupBookView(LoginRequiredMixin, CreateView):
         return redirect('transaction-list')  # Po dokončení nastavení přesměrujeme uživatele na seznam transakcí
 
 
-class BookListView(LoginRequiredMixin, ListView):
-    model = Book
-    template_name = 'budgetlog/book_list.html'
-    context_object_name = 'books'
-
-    def get_queryset(self):
-        return Book.objects.filter(owner=self.request.user)
-
-
 class BookCreateView(LoginRequiredMixin, CreateView):
     model = Book
     fields = ['name', 'description']
@@ -180,9 +171,11 @@ class BookContextMixin:
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['current_book'] = self.get_current_book()
-        return context
+        if not self.model == Book:
+            context = super().get_context_data(**kwargs)
+            context['current_book'] = self.get_current_book()
+            return context
+        return super().get_context_data(**kwargs)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -366,6 +359,13 @@ class ObjectListView(LoginRequiredMixin, BookContextMixin, ListView):
         context['edit_url_name'] = f'{self.model._meta.model_name}-edit'
         context['delete_url_name'] = f'{self.model._meta.model_name}-delete'
         return context
+
+class BookListView(ObjectListView):
+    model = Book
+    ordering = ['name']  # Řazení dle atributu name v modelu
+
+    def get_queryset(self):
+        return Book.objects.filter(owner=self.request.user)
 
 class CategoryListView(ObjectListView):
     """Zobrazí seznam všech kategorií."""

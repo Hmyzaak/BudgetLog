@@ -55,6 +55,9 @@ class AppUser(AbstractBaseUser):
 class Book(models.Model):
     """Model reprezentující knihu záznamů pro uživatele."""
 
+    object_plural_genitiv = "knih"
+    object_singular_akluzativ = "knihu"
+
     name = models.CharField(max_length=100, verbose_name="Jméno knihy", help_text="Uveďte jméno knihy")
     description = models.TextField(null=True, blank=True, verbose_name="Popis knihy",
                                    help_text="Popis knihy (volitelný)")

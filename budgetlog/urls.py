@@ -11,8 +11,8 @@ Používáme as_view(), abychom převedli třídy views na funkce, které Django
 urlpatterns = [
     # URL pro knihy
     path('books/', views.BookListView.as_view(), name='book-list'),
-    path('books/create/', views.BookCreateView.as_view(), name='book-create'),
-    path('books/<int:pk>/update/', views.BookUpdateView.as_view(), name='book-update'),
+    path('books/create/', views.BookCreateView.as_view(), name='book-add'),
+    path('books/<int:pk>/update/', views.BookUpdateView.as_view(), name='book-edit'),
     path('books/<int:pk>/delete/', views.BookDeleteView.as_view(), name='book-delete'),
     path('select-book/<int:book_id>/', views.SelectBookView.as_view(), name='select-book'),
     # URL pro trasakce
