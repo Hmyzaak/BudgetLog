@@ -1,13 +1,14 @@
 {% extends "base_generic.html" %}
-
 {% block content %}
-    <h1>Smazat {{ object_type }}</h1>
-    <p>Opravdu chcete smazat {{ object_type }}?</p>
-    <form method="post">
-        {% csrf_token %}
-        <div class="d-grid gap-2 d-md-block">
-            <button type="submit" class="btn btn-primary">Ano, smazat</button>
-            <a href="{% url list_url_name %}" class="btn btn-danger">Ne, vrátit se zpět</a>
-        </div>
-    </form>
+
+<h1>Smazat {{ object_singular_akluzativ }}</h1>
+<p>Opravdu chcete smazat {{ object_singular_akluzativ }} <strong>{{ object.name }}</strong>?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="d-grid gap-2 d-md-block">
+        <button type="submit" class="btn btn-primary">Ano, smazat</button>
+        <a href="{% url list_url_name %}" class="btn btn-danger">Ne, vrátit se zpět</a>
+    </div>
+</form>
 {% endblock %}

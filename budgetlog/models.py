@@ -78,6 +78,9 @@ class Account(models.Model):
         verbose_name_plural = "Účty"
         unique_together = ('name', 'book')
 
+    object_plural_genitiv = "účtů"
+    object_singular_akluzativ = "účet"
+
     name = models.CharField(max_length=100, verbose_name="Jméno účtu",
                             help_text="Uveď jméno či označení účtu")
     description = models.TextField(null=True, blank=True, verbose_name="Popis účtu",
@@ -124,6 +127,9 @@ class Transaction(models.Model):
     class Meta:
         verbose_name = "Transakce"
         verbose_name_plural = "Transakce"
+
+    object_plural_genitiv = "transakcí"
+    object_singular_akluzativ = "transakci"
 
     TYPE_CHOICES = (
         ('income', 'Příjem'),

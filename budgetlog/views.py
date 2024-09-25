@@ -118,6 +118,48 @@ class SetupBookView(LoginRequiredMixin, CreateView):
         return redirect('transaction-list')  # Po dokončení nastavení přesměrujeme uživatele na seznam transakcí
 
 
+class BookListView(LoginRequiredMixin, ListView):
+    model = Book
+    template_name = 'budgetlog/book_list.html'
+    context_object_name = 'books'
+
+    def get_queryset(self):
+        return Book.objects.filter(owner=self.request.user)
+
+
+class BookCreateView(LoginRequiredMixin, CreateView):
+    model = Book
+    fields = ['name', 'description']
+    template_name = 'budgetlog/object_form.html'
+    success_url = reverse_lazy('book-list')
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['object_type'] = self.model._meta.verbose_name
+        context['list_url_name'] = f'{self.model._meta.model_name}-list'
+        return context
+
+
+class BookUpdateView(LoginRequiredMixin, UpdateView):
+    model = Book
+    fields = ['name', 'description']
+    template_name = 'budgetlog/object_form.html'
+    success_url = reverse_lazy('book-list')
+
+    def get_queryset(self):
+        return Book.objects.filter(owner=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['object_type'] = self.model._meta.verbose_name
+        context['list_url_name'] = f'{self.model._meta.model_name}-list'
+        return context
+
+
 class BookContextMixin:
     """Mixin, který poskytne aktuální knihu uživatele v pohledech."""
 
@@ -312,15 +354,6 @@ class TransactionDetailView(LoginRequiredMixin, BookContextMixin, DeleteView):
         return super().dispatch(request, *args, **kwargs)
 
 
-class BookListView(LoginRequiredMixin, ListView):
-    model = Book
-    template_name = 'budgetlog/book_list.html'
-    context_object_name = 'books'
-
-    def get_queryset(self):
-        return Book.objects.filter(owner=self.request.user)
-
-
 class ObjectListView(LoginRequiredMixin, BookContextMixin, ListView):
     template_name = 'budgetlog/object_list.html'
     context_object_name = 'objects'
@@ -347,39 +380,6 @@ class AccountListView(LoginRequiredMixin, BookContextMixin, ListView):
     ordering = ['name']  # Řazení dle atributu name v modelu Account
 
 
-class BookCreateView(LoginRequiredMixin, CreateView):
-    model = Book
-    fields = ['name', 'description']
-    template_name = 'budgetlog/object_form.html'
-    success_url = reverse_lazy('book-list')
-
-    def form_valid(self, form):
-        form.instance.owner = self.request.user
-        return super().form_valid(form)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['object_type'] = self.model._meta.verbose_name
-        context['list_url_name'] = f'{self.model._meta.model_name}-list'
-        return context
-
-
-class BookUpdateView(LoginRequiredMixin, UpdateView):
-    model = Book
-    fields = ['name', 'description']
-    template_name = 'budgetlog/object_form.html'
-    success_url = reverse_lazy('book-list')
-
-    def get_queryset(self):
-        return Book.objects.filter(owner=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['object_type'] = self.model._meta.verbose_name
-        context['list_url_name'] = f'{self.model._meta.model_name}-list'
-        return context
-
-
 class ObjectFormView(LoginRequiredMixin, BookContextMixin):
     template_name = 'budgetlog/object_form.html'
 
@@ -390,7 +390,7 @@ class ObjectFormView(LoginRequiredMixin, BookContextMixin):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['object_type'] = self.model._meta.verbose_name
+        context['object_singular_akluzativ'] = self.model.object_singular_akluzativ
         context['list_url_name'] = f'{self.model._meta.model_name}-list'
         return context
 
@@ -454,7 +454,7 @@ class GenericDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['object_type'] = self.model._meta.verbose_name
+        context['object_singular_akluzativ'] = self.model.object_singular_akluzativ
         context['list_url_name'] = f'{self.model._meta.model_name}-list'
         return context
 
