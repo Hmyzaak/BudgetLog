@@ -372,11 +372,9 @@ class CategoryListView(ObjectListView):
     model = Category
     ordering = ['name']  # Řazení dle atributu name v modelu Category
 
-class AccountListView(LoginRequiredMixin, BookContextMixin, ListView):
+class AccountListView(ObjectListView):
     """Zobrazí seznam všech účtů."""
     model = Account
-    template_name = 'budgetlog/account_list.html'
-    context_object_name = 'accounts'
     ordering = ['name']  # Řazení dle atributu name v modelu Account
 
 
