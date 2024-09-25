@@ -101,6 +101,9 @@ class Category(models.Model):
         verbose_name_plural = "Kategorie"
         unique_together = ('name', 'book')
 
+    object_plural_genitiv = "kategorií"
+    object_singular_akluzativ = "kategorii"
+
     name = models.CharField(max_length=200, verbose_name="Název",
                             help_text="Uveď název kategorie pro transakce (např. potraviny, doprava, zábava)")
     color = models.CharField(max_length=7, default='#000000', verbose_name="Barva kategorie",

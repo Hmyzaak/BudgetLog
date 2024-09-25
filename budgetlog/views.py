@@ -152,15 +152,6 @@ class BookContextMixin:
         return queryset
 
 
-class BookListView(LoginRequiredMixin, ListView):
-    model = Book
-    template_name = 'budgetlog/book_list.html'
-    context_object_name = 'books'
-
-    def get_queryset(self):
-        return Book.objects.filter(owner=self.request.user)
-
-
 class SelectBookView(LoginRequiredMixin, View):
     """View pro zpracování výběru knihy uživatelem."""
 
@@ -321,13 +312,32 @@ class TransactionDetailView(LoginRequiredMixin, BookContextMixin, DeleteView):
         return super().dispatch(request, *args, **kwargs)
 
 
-class CategoryListView(LoginRequiredMixin, BookContextMixin, ListView):
+class BookListView(LoginRequiredMixin, ListView):
+    model = Book
+    template_name = 'budgetlog/book_list.html'
+    context_object_name = 'books'
+
+    def get_queryset(self):
+        return Book.objects.filter(owner=self.request.user)
+
+
+class ObjectListView(LoginRequiredMixin, BookContextMixin, ListView):
+    template_name = 'budgetlog/object_list.html'
+    context_object_name = 'objects'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['object_plural_genitiv'] = self.model.object_plural_genitiv
+        context['object_singular_akluzativ'] = self.model.object_singular_akluzativ
+        context['add_url_name'] = f'{self.model._meta.model_name}-add'
+        context['edit_url_name'] = f'{self.model._meta.model_name}-edit'
+        context['delete_url_name'] = f'{self.model._meta.model_name}-delete'
+        return context
+
+class CategoryListView(ObjectListView):
     """Zobrazí seznam všech kategorií."""
     model = Category
-    template_name = 'budgetlog/category_list.html'
-    context_object_name = 'categories'
     ordering = ['name']  # Řazení dle atributu name v modelu Category
-
 
 class AccountListView(LoginRequiredMixin, BookContextMixin, ListView):
     """Zobrazí seznam všech účtů."""

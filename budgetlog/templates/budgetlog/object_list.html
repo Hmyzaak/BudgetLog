@@ -1,0 +1,39 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Seznam {{ object_plural_genitiv }}</h1>
+<div class="d-grid gap-2 d-md-block">
+    <a href="{% url add_url_name %}" class="btn btn-primary">Přidat {{ object_singular_akluzativ }}</a>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Označení</th>
+            {% if objects.color %}
+                <th>Barva</th>
+            {% endif %}
+            <th>Akce</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for object in objects %}
+            <tr>
+                <td>{{ object.name }}</td>
+                {% if object.color %}
+                    <td>
+                        <div style="display: inline-block; width: 25px; height: 25px; border-radius: 50%;
+                        background-color: {{ object.color }};"></div>
+                    </td>
+                {% endif %}
+                <td>
+                    <a href="{% url edit_url_name object.id %}" class="btn btn-secondary btn-sm">Upravit</a>
+                    {% if not object.is_default %}
+                        <a href="{% url delete_url_name object.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
