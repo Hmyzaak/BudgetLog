@@ -74,32 +74,6 @@ class Book(models.Model):
         return f"{self.name} (Majitel: {self.owner.email})"
 
 
-class Account(models.Model):
-    """Model reprezentující účet k němuž se transakce vztahuje."""
-    class Meta:
-        verbose_name = "Účet"
-        verbose_name_plural = "Účty"
-        unique_together = ('name', 'book')
-
-    object_plural_genitiv = "účtů"
-    object_singular_akluzativ = "účet"
-
-    name = models.CharField(max_length=100, verbose_name="Jméno účtu",
-                            help_text="Uveď jméno či označení účtu")
-    description = models.TextField(null=True, blank=True, verbose_name="Popis účtu",
-                                   help_text="Detailnější popis účtu (volitelný)")
-    """null=True umožňuje, aby pole mohlo být v databázi prázdné, a blank=True umožňuje, aby pole mohlo být ponecháno 
-    prázdné ve formulářích."""
-    book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha",
-                             help_text="Vyberte knihu, ke které patří tento účet")
-    is_default = models.BooleanField(
-        default=False)  # Přidání příznaku pro výchozí kategorii, hodnota True umožní nesmazatelnost
-
-    def __str__(self):
-        """Textová reprezentace modelu Account"""
-        return self.name
-
-
 class Category(models.Model):
     """Model pro kategorizaci transakcí."""
     class Meta:
@@ -122,6 +96,30 @@ class Category(models.Model):
 
     def __str__(self):
         """Textová reprezentace modelu Category."""
+        return self.name
+
+
+class Tag(models.Model):
+    """Model reprezentující tag, který může být přiřazen k více transakcím."""
+
+    class Meta:
+        verbose_name = "Tag"
+        verbose_name_plural = "Tagy"
+        unique_together = ('name', 'book')  # Tag musí být jedinečný v rámci knihy
+
+    name = models.CharField(max_length=100, verbose_name="Název tagu",
+                            help_text="Uveď název tagu.")
+    color = models.CharField(max_length=7, default='#000000', verbose_name="Barva tagu",
+                             help_text="Barva tagu")
+    description = models.TextField(null=True, blank=True, verbose_name="Popis tagu",
+                                   help_text="Popis tagu (volitelný).")
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha",
+                             help_text="Vyberte knihu, ke které patří tento tag")
+
+    object_plural_genitiv = "tagů"
+    object_singular_akluzativ = "tag"
+
+    def __str__(self):
         return self.name
 
 
@@ -151,12 +149,16 @@ class Transaction(models.Model):
     že transakce nebude smazána."""
     datestamp = models.DateField(default=timezone.now, verbose_name="Datum",
                                  help_text="Datum provedení transakce.")
-    account = models.ForeignKey(Account, null=True, on_delete=models.SET_NULL, verbose_name="Účet",
-                                related_name='transactions', help_text="Vyberte účet pro tuto transakci.")
+    tags = models.ManyToManyField(Tag, blank=True, verbose_name="Tagy",
+                                  related_name='transactions', help_text="Vyberte tagy pro tuto transakci.")
     description = models.TextField(null=True, blank=True, verbose_name="Popis",
                                    help_text="Zadejte detailnější popis transakce (volitelný).")
     type = models.CharField(max_length=7, choices=TYPE_CHOICES, default='expense', verbose_name="Typ",
                             help_text="Zvolte, zda je tato transakce výdaj nebo příjem?")
+
+    def display_tags(self, transaction):
+        return ', '.join(tag.name for tag in transaction.tags.all())
+    display_tags.short_description = 'Tagy'
 
     def __str__(self):
         """Textová reprezentace modelu pro transakci."""

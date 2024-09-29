@@ -48,10 +48,10 @@ class BookAdmin(admin.ModelAdmin):
     list_display = ('name', 'description', 'owner')
 
 
-@admin.register(Account)
-class AccountAdmin(admin.ModelAdmin):
-    """Zobrazuje sloupce 'name', 'description' a 'book' v admin seznamu."""
-    list_display = ('name', 'description', 'book')
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    """Zobrazuje sloupce v admin seznamu."""
+    list_display = ('name', 'color', 'description', 'book')
 
 
 @admin.register(Category)
@@ -63,8 +63,8 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
     """Zobrazuje všechny atributy transakce ve sloupcích v admin seznamu a umožňuje podle níže uvedených filtrovat."""
-    list_display = ('amount', 'category', 'datestamp', 'description', 'account', 'type', 'book')
-    list_filter = ('type', 'category', 'datestamp', 'account', 'book')
+    list_display = ('amount', 'category', 'datestamp', 'display_tags', 'description', 'type', 'book')
+    list_filter = ('type', 'category', 'datestamp', 'book')
 
 
 @admin.register(AppUser)

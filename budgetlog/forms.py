@@ -1,16 +1,21 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import *
+from budgetlog.templatetags.widgets import ColoredTagWidget
 
 
 class TransactionForm(forms.ModelForm):
     """Formulář pro přidání a úpravu transakcí."""
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.all(),
+        widget=ColoredTagWidget,
+        required=False,
+        label="Tagy"
+    )
 
     class Meta:
         model = Transaction
-        # Odkazuje na model, pro který formulář vytváříme
-        fields = ['amount', 'category', 'datestamp', 'description', 'account', 'type']
-        # Pole zahrnuta ve formuláři
+        fields = ['amount', 'type', 'category', 'datestamp', 'description', 'tags']
         widgets = {'datestamp': forms.DateInput(attrs={'type': 'date'}),
                    'description': forms.Textarea(attrs={'rows': 1})
                    }
@@ -26,10 +31,21 @@ class TransactionForm(forms.ModelForm):
         # Aktualizace querysetů pro category a account pouze pro aktuální knihu
         if self.book:
             self.fields['category'].queryset = Category.objects.filter(book=self.book)
-            self.fields['account'].queryset = Account.objects.filter(book=self.book)
+            self.fields['tags'].queryset = Tag.objects.filter(book=self.book)
         else:
             self.fields['category'].queryset = Category.objects.none()
-            self.fields['account'].queryset = Account.objects.none()
+            self.fields['tags'].queryset = Tag.objects.none()
+
+
+class TransactionFilterForm(forms.ModelForm):
+    class Meta:
+        model = Transaction
+        fields = ['tags']  # Pouze pole pro tagy
+
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.all(),
+        widget=ColoredTagWidget
+    )
 
 
 class CategoryForm(forms.ModelForm):
@@ -44,13 +60,16 @@ class CategoryForm(forms.ModelForm):
         }
 
 
-class AccountForm(forms.ModelForm):
-    """Formulář pro přidání a úpravu účtů pro transakce."""
+class TagForm(forms.ModelForm):
+    """Formulář pro přidání a úpravu tagů pro transakce."""
 
     class Meta:
-        model = Account
-        fields = ['name', 'description']
-        widgets = {'description': forms.Textarea(attrs={'rows': 1})}
+        model = Tag
+        fields = ['name', 'color', 'description']
+        widgets = {
+            'color': forms.TextInput(attrs={'type': 'color'}),
+            'description': forms.Textarea(attrs={'rows': 1})
+        }
 
 
 class UserRegistrationForm(UserCreationForm):

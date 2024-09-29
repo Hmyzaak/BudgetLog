@@ -80,7 +80,7 @@
     <tbody>
         {% for transaction in transactions %}
             <tr class="clickable-row" data-href="{% url 'transaction-detail' transaction.id %}">
-                <td>{{ transaction.datestamp|date:"Y-m-d" }}</td>
+                <td>{{ transaction.datestamp|date:"d-m-Y" }}</td>
                 <td>{{ transaction.category.name }}</td>
                 <td>
                     {% if transaction.adjusted_amount < 0 %}

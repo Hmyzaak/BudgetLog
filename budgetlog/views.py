@@ -86,7 +86,6 @@ class SetupBookView(LoginRequiredMixin, CreateView):
         book_name = request.POST.get('book_name', 'Základní kniha')
         selected_categories = request.POST.getlist('categories')
         custom_categories = request.POST.get('custom_categories')
-        account_name = request.POST.get('account_name', 'Základní účet')
 
         if not selected_categories and not custom_categories:
             messages.error(request, 'Musíte vybrat alespoň jednu kategorii.')
@@ -111,9 +110,6 @@ class SetupBookView(LoginRequiredMixin, CreateView):
             custom_category_names = [name.strip() for name in custom_categories.split(',') if name.strip()]
             for category_name in custom_category_names:
                 create_category(category_name, book)
-
-        # Vytvoření účtu
-        Account.objects.create(name=account_name, book=book)
 
         return redirect('transaction-list')  # Po dokončení nastavení přesměrujeme uživatele na seznam transakcí
 
@@ -171,11 +167,9 @@ class BookContextMixin:
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
-        if not self.model == Book:
-            context = super().get_context_data(**kwargs)
-            context['current_book'] = self.get_current_book()
-            return context
-        return super().get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
+        context['current_book'] = self.get_current_book()
+        return context
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -375,9 +369,9 @@ class CategoryListView(ObjectListView):
     ordering = ['name']  # Řazení dle atributu name v modelu Category
 
 
-class AccountListView(ObjectListView):
-    """Zobrazí seznam všech účtů."""
-    model = Account
+class TagListView(ObjectListView):
+    """Zobrazí seznam všech tagů."""
+    model = Tag
     ordering = ['name']  # Řazení dle atributu name v modelu Account
 
 
@@ -419,9 +413,9 @@ class CategoryCreateView(ObjectFormView, CreateView):
     form_class = CategoryForm
 
 
-class AccountCreateView(ObjectFormView, CreateView):
-    model = Account
-    form_class = AccountForm
+class TagCreateView(ObjectFormView, CreateView):
+    model = Tag
+    form_class = TagForm
 
 
 class TransactionUpdateView(ObjectFormView, UpdateView):
@@ -440,9 +434,9 @@ class CategoryUpdateView(ObjectFormView, UpdateView):
     form_class = CategoryForm
 
 
-class AccountUpdateView(ObjectFormView, UpdateView):
-    model = Account
-    form_class = AccountForm
+class TagUpdateView(ObjectFormView, UpdateView):
+    model = Tag
+    form_class = TagForm
 
 
 class GenericDeleteView(LoginRequiredMixin, DeleteView):
@@ -466,13 +460,11 @@ class BookDeleteView(GenericDeleteView):
     def delete(self, request, *args, **kwargs):
         book = self.get_object()
 
-        # Získat výchozí kategorii a účet pro danou knihu
+        # Získat výchozí kategorii pro danou knihu
         default_category = Category.objects.get(book=book, is_default=True)
-        default_account = Account.objects.get(book=book, is_default=True)
 
         # Aktualizovat transakce spojené s touto knihou
         Transaction.objects.filter(category__book=book).update(category=default_category)
-        Transaction.objects.filter(account__book=book).update(account=default_account)
 
         # Pokud je potřeba knihu archivovat nebo smazat
         return super().delete(request, *args, **kwargs)
@@ -493,15 +485,8 @@ class CategoryDeleteView(BookContextMixin, GenericDeleteView):
         return super().dispatch(request, *args, **kwargs)
 
 
-class AccountDeleteView(BookContextMixin, GenericDeleteView):
-    model = Account
-
-    def dispatch(self, request, *args, **kwargs):
-        account = self.get_object()
-        if account.is_default:
-            # Zamezit mazání výchozího účtu
-            return HttpResponseForbidden("Tento účet nelze smazat.")
-        return super().dispatch(request, *args, **kwargs)
+class TagDeleteView(BookContextMixin, GenericDeleteView):
+    model = Tag
 
 
 class MonthDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixin, TemplateView):
@@ -669,7 +654,7 @@ class ExportTransactionsCSVView(LoginRequiredMixin, BookContextMixin, FilterView
         # Vytvoření CSV writeru s obalením do UTF-8 pomocí TextIOWrapper
         writer = csv.writer(output)
         # Zápis hlavičky do CSV
-        writer.writerow(['Datum', 'Kategorie', 'Částka', 'Účet', 'Popis', 'Typ', 'Kniha'])
+        writer.writerow(['Datum', 'Kategorie', 'Částka', 'Tagy', 'Popis', 'Typ', 'Kniha'])
 
         # Zápis dat do CSV
         for transaction in queryset:
@@ -677,7 +662,7 @@ class ExportTransactionsCSVView(LoginRequiredMixin, BookContextMixin, FilterView
                 transaction.datestamp,
                 transaction.category.name,
                 transaction.adjusted_amount,
-                transaction.account.name,
+                transaction.display_tags(transaction),
                 transaction.description,
                 transaction.type,
                 transaction.book,

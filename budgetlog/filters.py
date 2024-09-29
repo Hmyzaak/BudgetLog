@@ -1,6 +1,9 @@
 import django_filters
 from django import forms
-from .models import Transaction, Category, Account
+
+from .forms import TransactionFilterForm
+from .models import *
+from budgetlog.templatetags.widgets import ColoredTagWidget
 
 
 class TransactionFilter(django_filters.FilterSet):
@@ -29,16 +32,19 @@ class TransactionFilter(django_filters.FilterSet):
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
 
-    # Kategorie a účet
+    # Kategorie
     category = django_filters.ModelChoiceFilter(
         queryset=Category.objects.none(),  # Prázdný queryset, bude nastaven dynamicky
         label='Kategorie',
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-    account = django_filters.ModelChoiceFilter(
-        queryset=Account.objects.none(),  # Prázdný queryset, bude nastaven dynamicky
-        label='Účet',
-        widget=forms.Select(attrs={'class': 'form-select'})
+
+    # Tagy
+    tags = django_filters.ModelMultipleChoiceFilter(
+        queryset=Tag.objects.all(),
+        widget=ColoredTagWidget,
+        label='Tagy',
+        conjoined=True  # Pokud `False`, filtruje transakce, které mají alespoň jeden ze zadaných tagů
     )
 
     # Popis transakce (fulltext)
@@ -57,9 +63,10 @@ class TransactionFilter(django_filters.FilterSet):
         if book:
             # Nastavení querysetu na kategorie a účty pouze z aktuální knihy
             self.filters['category'].queryset = Category.objects.filter(book=book)
-            self.filters['account'].queryset = Account.objects.filter(book=book)
+            self.filters['tags'].queryset = Tag.objects.filter(book=book)
 
     class Meta:
         model = Transaction
-        fields = ['amount_min', 'amount_max', 'type', 'datestamp__gte', 'datestamp__lte', 'category', 'account',
+        form = TransactionFilterForm
+        fields = ['amount_min', 'amount_max', 'type', 'datestamp__gte', 'datestamp__lte', 'category', 'tags',
                   'description']

@@ -12,7 +12,7 @@
     </div>
 
     <div class="form-group mb-3">
-        <label for="categories">Vyberte kategorie, do kterých budete řadit transakce (později lze upravit a vytvořit další):</label>
+        <label for="categories">Vyberte kategorie, do kterých budete třídit transakce (později lze upravit a vytvořit další):</label>
         <div class="row">
             {% for category in categories %}
                 <div class="col-12 col-sm-6 col-md-4 mb-2">
@@ -27,11 +27,6 @@
             <label for="custom_categories">Nebo uveďte označení vlastních kategorií (oddělené čárkou):</label>
             <input type="text" name="custom_categories" class="form-control" placeholder="Např. Výplata, Investice">
         </div>
-    </div>
-
-    <div class="form-group mb-3">
-        <label for="account_name">Pojmenujte účet, k němuž se budou transakce vztahovat (později lzde upravit a vytvořit další)</label>
-        <input type="text" name="account_name" class="form-control" value="Základní účet" required>
     </div>
 
     <button type="submit" class="btn btn-primary">Vytvořit</button>

@@ -7,38 +7,40 @@
     <a href="{% url add_url_name %}" class="btn btn-primary">Přidat {{ object_singular_akluzativ }}</a>
 </div>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Označení</th>
-            {% if objects.first.color %}
-                <th>Barva</th>
-            {% endif %}
-            <th>Akce</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for object in objects %}
+<div class="table-responsive">  <!-- Bootstrap třída pro responzivní tabulku -->
+    <table class="table table-striped">
+        <thead>
             <tr>
-                <td>{{ object.name }}</td>
-                {% if object.color %}
-                    <td>
-                        <div style="display: inline-block; width: 25px; height: 25px; border-radius: 50%;
-                        background-color: {{ object.color }};"></div>
-                    </td>
+                <th>Označení</th>
+                {% if objects.first.color %}
+                    <th>Barva</th>
                 {% endif %}
-                <td>
-                    {% if object|instanceof:"Book" %}
-                        <a href="{% url 'select-book' book_id=object.id %}" class="btn btn-info">Vybrat knihu</a>
-                    {% endif %}
-                    <a href="{% url edit_url_name object.id %}" class="btn btn-secondary btn-sm">Upravit</a>
-                    {% if not object.is_default %}
-                        <a href="{% url delete_url_name object.id %}" class="btn btn-danger btn-sm">Smazat</a>
-                    {% endif %}
-                </td>
+                <th>Akce</th>
             </tr>
-        {% endfor %}
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            {% for object in objects %}
+                <tr>
+                    <td>{{ object.name }}</td>
+                    {% if object.color %}
+                        <td>
+                            <div style="display: inline-block; width: 25px; height: 25px; border-radius: 50%;
+                            background-color: {{ object.color }};"></div>
+                        </td>
+                    {% endif %}
+                    <td>
+                        {% if object|instanceof:"Book" %}
+                            <a href="{% url 'select-book' book_id=object.id %}" class="btn btn-info">Vybrat knihu</a>
+                        {% endif %}
+                        <a href="{% url edit_url_name object.id %}" class="btn btn-secondary btn-sm">Upravit</a>
+                        {% if not object.is_default %}
+                            <a href="{% url delete_url_name object.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 {% endblock %}
