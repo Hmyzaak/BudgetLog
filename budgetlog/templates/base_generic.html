@@ -7,6 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="JaVoj">
+
     <link rel="shortcut icon" href="{% static 'pics/Optima-GFX-free-icon_calculator_coin_dollar_money.png' %}">
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/nouislider.min.css' %}">
@@ -20,7 +21,24 @@
     <!-- Navigační lišta -->
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-            <a class="navbar-brand">BudgetLog</a>
+            <a class="navbar-brand">
+                <!-- Informace o uživateli a knize -->
+                <div class="py-0 px-3 bg-dark">
+                    <img src="{% static 'pics/Optima-GFX-free-icon_calculator_coin_dollar_money.png' %}" alt="logo" width="30" height="30" class="d-inline-block align-center">
+                    <span class="fs-3">BudgetLog</span>
+                    {% if request.user.is_authenticated %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small">{{ request.user.email }} |
+                            </span>
+                            {% if current_book %}
+                                <span class="small">| {{ current_book.name }}</span>
+                            {% else %}
+                                <span class="small">| Kniha není vybrána</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                     aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -42,7 +60,7 @@
                                 <a class="nav-link" href="{% url 'category-list' %}">Kategorie</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'account-list' %}">Účty</a>
+                                <a class="nav-link" href="{% url 'tag-list' %}">Tagy</a>
                             </li>
                         {% endif %}
                         <li class="nav-item">
@@ -87,15 +105,6 @@
     <!-- Zápatí -->
     <footer class="footer py-3 bg-dark">
         <div class="container text-center">
-            {% if request.user.is_authenticated %}
-                <span>Přihlášený uživatel: {{ request.user.email }}</span>
-                {% if current_book %}
-                    <span>| Aktuální kniha: {{ current_book.name }}</span>
-                {% else %}
-                    <span>| Kniha není vybrána</span>
-                {% endif %}
-            {% endif %}
-            <br>
             <span class="text-muted">Vytvořil @JaVoj 2024</span>
         </div>
     </footer>
@@ -119,7 +128,7 @@
                            urlParams.toString().includes('datestamp__gte') ||
                            urlParams.toString().includes('datestamp__lte') ||
                            urlParams.toString().includes('category') ||
-                           urlParams.toString().includes('account') ||
+                           urlParams.toString().includes('tags') ||
                            urlParams.toString().includes('description');
 
         if (!hasFilters) {

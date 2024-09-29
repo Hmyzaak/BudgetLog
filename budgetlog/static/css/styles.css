@@ -8,6 +8,11 @@ main {
     padding-top: 84px; /* Výchozí výška pro pevně umístěnou navbar */
 }
 
+.navbar {
+    --bs-navbar-padding-y: 0rem;
+    --bs-navbar-brand-padding-y: 0rem;
+}
+
 .navbar-nav .nav-item .nav-link {
     padding-left: 1rem;
     padding-right: 1rem;
