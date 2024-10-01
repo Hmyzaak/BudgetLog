@@ -1,0 +1,28 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+{% load crispy_forms_tags %}
+<h1>{{ title }}</h1> <!-- Dynamický nadpis "Registrace" nebo "Login" -->
+
+<hr>
+<div class="col-md-4">
+</div>
+<div class="col-md-4">
+    <section class="login-form">
+        <form method="post" action="">
+            {% csrf_token %}
+            <div class="container-fluid">
+                {{form|crispy}}
+                <button type="submit" class="btn btn-primary" value="Login">Potvrdit</button>
+                    {% if title == "Přihlášení" %}
+                        <a href="{% url 'registration' %}" class="btn btn-danger">Ještě nemám účet</a>
+                    {% elif title == "Registrace" %}
+                        <a href="{% url 'login' %}" class="btn btn-danger">Již mám účet</a>
+                    {% endif %}
+            </div>
+        </form>
+    </section>
+</div>
+<div class="col-md-4">
+</div>
+{% endblock %}

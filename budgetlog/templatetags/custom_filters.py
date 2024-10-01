@@ -12,3 +12,9 @@ MONTHS_CS = {
 @register.filter(name='format_month_cs')
 def format_month_cs(month):
     return MONTHS_CS.get(month, '')
+
+
+@register.filter
+def instanceof(object, class_name):
+    """Vrátí True, pokud je object instance dané třídy"""
+    return object.__class__.__name__ == class_name

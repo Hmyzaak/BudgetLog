@@ -5,7 +5,7 @@
 {% block content %}
 <h1>Přehled transakcí</h1>
 
-<div class="d-grid gap-2 d-md-block">
+<div class="d-grid gap-2 mb-3 mt-3 d-md-block">
     <a href="{% url 'transaction-add' %}" class="btn btn-primary">Přidat novou transakci</a>
     <button id="toggle-filter" class="btn btn-primary">Filtrovat transakce</button>
 </div>
@@ -39,22 +39,32 @@
         </div>
 
         <div class="row mb-3">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label for="id_category" class="form-label">Kategorie</label>
                 {{ filter.form.category }}
             </div>
-            <div class="col-md-4">
-                <label for="id_account" class="form-label">Účet</label>
-                {{ filter.form.account }}
-            </div>
-            <div class="col-md-4">
+
+            <div class="col-md-6">
                 <label for="id_description" class="form-label">Popis obsahuje</label>
                 {{ filter.form.description }}
             </div>
         </div>
 
+        <div class="row-mb-3">
+            <label for="id_tags" class="form-label">Filtrované tagy</label>
+            <div class="d-flex flex-wrap">
+                {{ filter.form.tags }}
+                {% for tag in tags %}
+                    <div class="form-check">
+                        <input type="checkbox" name="tags" value="{{ tag }}" checked class="form-check-input">
+                        <label class="form-check-label">{{ tag }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- Tlačítko pro odeslání formuláře a tlačítko pro reset stránky bez filtrů-->
-        <div class="d-grid gap-2 d-md-block">
+        <div class="d-grid gap-2 mt-3 mb-3 d-md-block">
             <button type="submit" class="btn btn-info">Filtruj</button>
             <a href="{% url 'transaction-list' %}" class="btn btn-info">Zruš filtry</a>
         </div>
@@ -88,45 +98,58 @@
             </tr>
         </tbody>
     </table>
+    <div class="d-grid gap-2 d-md-block">
+        <a href="{% url 'export-transactions-csv' %}?{% query_transform %}" class="btn btn-secondary">Export filtrovaných transakcí do CSV</a>
+    </div>
     {% endif %}
 </div>
 
 <h2>Seznam transakcí</h2>
-<table class="table table-striped table-hover">
-    <thead>
-        <tr>
-            <th>Datum</th>
-            <th>Kategorie</th>
-            <th>Částka</th>
-            <th>Účet</th>
-            <th>Akce</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for transaction in transactions %}
-            <tr class="clickable-row" data-href="{% url 'transaction-detail' transaction.id %}">
-                <td>{{ transaction.datestamp|date:"Y-m-d" }}</td>
-                <td>{{ transaction.category.name }}</td>
-                <td>
-                    {% if transaction.adjusted_amount < 0 %}
-                        <span class="text-danger">{{ transaction.adjusted_amount }} CZK</span>
-                    {% else %}
-                        <span class="text-success">{{ transaction.adjusted_amount }} CZK</span>
-                    {% endif %}
-                </td>
-                <td>{{ transaction.account.name }}</td>
-                <td>
-                    <a href="{% url 'transaction-edit' transaction.id %}" class="btn btn-secondary btn-sm">Upravit</a>
-                    <a href="{% url 'transaction-delete' transaction.id %}" class="btn btn-danger btn-sm">Smazat</a>
-                </td>
-            </tr>
-        {% empty %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
             <tr>
-                <td colspan="5">Žádné transakce nenalezeny.</td>
+                <th>Datum</th>
+                <th>Kategorie</th>
+                <th>Částka</th>
+                <th>Tagy</th>
+                <th>Akce</th>
             </tr>
-        {% endfor %}
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+                <tr class="clickable-row" data-href="{% url 'transaction-detail' transaction.id %}">
+                    <td>{{ transaction.datestamp|date:"d-m-Y" }}</td>
+                    <td>{{ transaction.category.name }}</td>
+                    <td>
+                        {% if transaction.adjusted_amount < 0 %}
+                            <span class="text-danger">{{ transaction.adjusted_amount }} CZK</span>
+                        {% else %}
+                            <span class="text-success">{{ transaction.adjusted_amount }} CZK</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for tag in transaction.tags.all %}
+                            <span class="badge" style="background-color: {{ tag.color }};">
+                                {{ tag.name }}
+                            </span>
+                        {% empty %}
+                            <span class="text-muted">Bez tagů</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <a href="{% url 'transaction-edit' transaction.id %}" class="btn btn-secondary btn-sm">Upravit</a>
+                        <a href="{% url 'transaction-delete' transaction.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">Žádné transakce nenalezeny.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 <!-- Stránkování -->
 <nav aria-label="Page navigation" class="mt-3">

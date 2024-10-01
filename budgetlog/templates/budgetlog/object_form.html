@@ -1,0 +1,19 @@
+{% extends "base_generic.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<h1>
+    {% if form.instance.pk %}Upravit {{ object_singular_akluzativ }} <strong>{{ object.name }}</strong>
+    {% else %}Přidat {{ object_singular_akluzativ }}
+    {% endif %}
+</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <div class="d-grid gap-2 d-md-block">
+        <button type="submit" class="btn btn-primary">Uložit</button>
+        <a href="{% url list_url_name %}" class="btn btn-secondary">Zpět na seznam</a>
+    </div>
+</form>
+{% endblock %}
