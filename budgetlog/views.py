@@ -310,6 +310,9 @@ class TransactionListView(LoginRequiredMixin, BookContextMixin, TransactionSumma
                                          queryset=self.get_queryset(),
                                          book=self.get_current_book())
         context['filter'] = filterset
+        current_book = self.get_current_book()
+        context['all_tags'] = Tag.objects.filter(book=current_book)
+        context['all_categories'] = Category.objects.filter(book=current_book)
 
         filtered_qs = filterset.qs
         paginator = Paginator(filtered_qs, self.paginate_by)
@@ -671,3 +674,39 @@ class ExportTransactionsCSVView(LoginRequiredMixin, BookContextMixin, FilterView
         # Vrácení CSV výstupu ve správném kódování UTF-8
         response.write(output.getvalue().encode('utf-8-sig'))
         return response
+
+
+class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
+    """Umožňuje provádět hromadné operace na vyfiltrovaných transakcích."""
+
+    def post(self, request, *args, **kwargs):
+        transaction_ids = request.POST.getlist('selected_transactions')
+        action = request.POST.get('action')
+        tag_id = request.POST.get('bulk_tag')
+        category_id = request.POST.get('bulk_category')
+
+        if not transaction_ids:
+            messages.error(request, "Nevybrali jste žádné transakce.")
+            return redirect('transaction-list')
+
+        transactions = Transaction.objects.filter(id__in=transaction_ids, book=self.get_current_book())
+
+        # Přiřazení tagu
+        if action == 'assign_tag' and tag_id:
+            tag = get_object_or_404(Tag, id=tag_id)
+            for transaction in transactions:
+                transaction.tags.add(tag)
+            messages.success(request, "Tag byl přiřazen k vybraným transakcím.")
+
+        # Změna kategorie
+        elif action == 'change_category' and category_id:
+            category = get_object_or_404(Category, id=category_id)
+            transactions.update(category=category)
+            messages.success(request, "Kategorie byla změněna u vybraných transakcí.")
+
+        # Smazání transakcí
+        elif action == 'delete':
+            transactions.delete()
+            messages.success(request, "Vybrané transakce byly smazány.")
+
+        return redirect('transaction-list')
