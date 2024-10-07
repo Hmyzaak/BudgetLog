@@ -32,3 +32,19 @@ main {
 .clickable-row {
     cursor: pointer;
 }
+
+#div_id_tags > fieldset > div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+}
+
+#div_id_tags > fieldset > div > form-check {
+    display: flex !important;
+    align-items: center !important;
+    margin: 5px !important;
+}
+
+#div_id_tags > fieldset > legend {
+    font-size: 1rem !important;
+}

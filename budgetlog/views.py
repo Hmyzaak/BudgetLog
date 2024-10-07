@@ -298,38 +298,16 @@ class TransactionSummaryMixin:
 class TransactionListView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixin, FilterView, ListView):
     """Umožňuje vytvořit a držet data pro filtrování v seznamu transakcí a umožňuje stránkování v těchto seznamech."""
     model = Transaction
-    filterset_class = TransactionFilter
     template_name = 'budgetlog/transaction_list.html'
     context_object_name = 'transactions'
-    paginate_by = 30
     ordering = ['-datestamp']
+    filterset_class = TransactionFilter
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        filterset = self.filterset_class(self.request.GET,
-                                         queryset=self.get_queryset(),
-                                         book=self.get_current_book())
-        context['filter'] = filterset
-        current_book = self.get_current_book()
-        context['all_tags'] = Tag.objects.filter(book=current_book)
-        context['all_categories'] = Category.objects.filter(book=current_book)
-
-        filtered_qs = filterset.qs
-        paginator = Paginator(filtered_qs, self.paginate_by)
-        page = self.request.GET.get('page')
-
-        try:
-            transactions = paginator.page(page)
-        except PageNotAnInteger:
-            transactions = paginator.page(1)
-        except EmptyPage:
-            transactions = paginator.page(paginator.num_pages)
-
-        context['transactions'] = transactions
-        # Přidání dalších dat do kontextu (např. bilance, max/min částky atd.)
-        context.update(self.get_additional_context_data(filtered_qs))
-
-        return context
+    def get_filterset_kwargs(self, filterset_class):
+        """Přidává aktuální knihu do filtrů."""
+        kwargs = super().get_filterset_kwargs(filterset_class)
+        kwargs['book'] = self.get_current_book()
+        return kwargs
 
 
 class TransactionDetailView(LoginRequiredMixin, BookContextMixin, DeleteView):
@@ -678,35 +656,60 @@ class ExportTransactionsCSVView(LoginRequiredMixin, BookContextMixin, FilterView
 
 class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
     """Umožňuje provádět hromadné operace na vyfiltrovaných transakcích."""
+    filterset_class = TransactionFilter
+
+    def get_filtered_queryset(self, request):
+        """Získá vyfiltrované transakce podle aktuálních filtrů."""
+        filterset = TransactionFilter(request.GET, queryset=Transaction.objects.filter(book=self.get_current_book()))
+        return filterset.qs
 
     def post(self, request, *args, **kwargs):
-        transaction_ids = request.POST.getlist('selected_transactions')
+        select_all = request.POST.get('select_all')  # Informace, zda bylo vybráno "Vybrat vše"
+        selected_transactions = request.POST.get('selected_transactions')
+
+        print('Přijaté ID transakcí:', selected_transactions)
+
+        transaction_ids = [tid for tid in selected_transactions.split(',') if tid]
+
+        print('Vybraná transakční ID po zpracování:', transaction_ids)
+
+        transactions = Transaction.objects.filter(id__in=transaction_ids, book=self.get_current_book())
         action = request.POST.get('action')
         tag_id = request.POST.get('bulk_tag')
         category_id = request.POST.get('bulk_category')
 
-        if not transaction_ids:
-            messages.error(request, "Nevybrali jste žádné transakce.")
-            return redirect('transaction-list')
+        if select_all == 'true':
+            # Vybereme všechny filtrované transakce
+            transactions = self.get_filtered_queryset(request)
+        else:
+            # Vybereme pouze specifikované transakce
+            if selected_transactions:
+                transaction_ids = [tid for tid in selected_transactions.split(',') if tid]
+                transactions = Transaction.objects.filter(id__in=transaction_ids)
+            else:
+                transactions = Transaction.objects.none()
+                messages.error(request, "Nevybrali jste žádné transakce.")
+                return redirect('transaction-list')
 
-        transactions = Transaction.objects.filter(id__in=transaction_ids, book=self.get_current_book())
-
-        # Přiřazení tagu
         if action == 'assign_tag' and tag_id:
             tag = get_object_or_404(Tag, id=tag_id)
+            count = 0
             for transaction in transactions:
                 transaction.tags.add(tag)
-            messages.success(request, "Tag byl přiřazen k vybraným transakcím.")
+                count += 1
+            messages.success(request, f'Tag "{tag.name}" byl přiřazen k {count} transakcím.')
 
-        # Změna kategorie
+            # Změna kategorie
         elif action == 'change_category' and category_id:
             category = get_object_or_404(Category, id=category_id)
+            count = transactions.count()
             transactions.update(category=category)
-            messages.success(request, "Kategorie byla změněna u vybraných transakcí.")
+            messages.success(request, f'Kategorie byla změněna u {count} transakcí na "{category.name}".')
 
-        # Smazání transakcí
+            # Smazání transakcí
         elif action == 'delete':
+            count = transactions.count()
             transactions.delete()
-            messages.success(request, "Vybrané transakce byly smazány.")
+            messages.success(request, f'Bylo smazáno {count} transakcí.')
 
         return redirect('transaction-list')

@@ -37,15 +37,27 @@ class TransactionForm(forms.ModelForm):
             self.fields['tags'].queryset = Tag.objects.none()
 
 
-class TransactionFilterForm(forms.ModelForm):
+class TransactionFilterForm(forms.Form):
+    """Formulář pro filtrování transakcí (ne editaci)."""
+
+    amount_min = forms.DecimalField(required=False, label='Částka (min)',
+                                    widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    amount_max = forms.DecimalField(required=False, label='Částka (max)',
+                                    widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    datestamp__gte = forms.DateField(required=False, label='Datum (od)',
+                                     widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
+    datestamp__lte = forms.DateField(required=False, label='Datum (do)',
+                                     widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
+
     class Meta:
         model = Transaction
-        fields = ['tags']  # Pouze pole pro tagy
-
-    tags = forms.ModelMultipleChoiceField(
-        queryset=Tag.objects.all(),
-        widget=ColoredTagWidget
-    )
+        fields = ['amount_min', 'amount_max', 'type', 'datestamp__gte', 'datestamp__lte', 'category', 'tags', 'description']
+        widgets = {
+            'type': forms.Select(attrs={'class': 'form-select'}),
+            'category': forms.Select(attrs={'class': 'form-select'}),
+            'tags': ColoredTagWidget(attrs={'class': 'form-check-input'}),
+            'description': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
 
 class CategoryForm(forms.ModelForm):

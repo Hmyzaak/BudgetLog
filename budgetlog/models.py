@@ -154,7 +154,7 @@ class Transaction(models.Model):
     description = models.TextField(null=True, blank=True, verbose_name="Popis",
                                    help_text="Zadejte detailnější popis transakce (volitelný).")
     type = models.CharField(max_length=7, choices=TYPE_CHOICES, default='expense', verbose_name="Typ",
-                            help_text="Zvolte, zda je tato transakce výdaj nebo příjem?")
+                            help_text="Zvolte, zda je tato transakce výdaj nebo příjem.")
 
     def display_tags(self, transaction):
         return ', '.join(tag.name for tag in transaction.tags.all())

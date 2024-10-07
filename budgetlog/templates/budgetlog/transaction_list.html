@@ -1,6 +1,5 @@
 {% extends "base_generic.html" %}
 {% load crispy_forms_tags %}
-{% load query_transform %}
 
 {% block content %}
 <h1>Přehled transakcí</h1>
@@ -15,53 +14,7 @@
 
     <form method="get" class="form-inline">
         {% csrf_token %}
-
-        <div class="row mb-3">
-            <div class="col-md-2">
-                <label for="{{ filter.form.datestamp__gte.id_for_label }}" class="form-label">Datum (od)</label>
-                {{ filter.form.datestamp__gte }}
-            </div>
-            <div class="col-md-2">
-                <label for="{{ filter.form.datestamp__lte.id_for_label }}" class="form-label">Datum (do)</label>
-                {{ filter.form.datestamp__lte }}
-            </div>
-            <div class="col-md-2">
-                <label for="id_type" class="form-label">Typ transakce</label>
-                {{ filter.form.type }}
-            </div>
-            <div class="col-md-6">
-                <label for="id_amount" class="form-label">Částka (od-do)</label>
-                <div id="amount-range-slider" data-max-amount="{{ max_amount }}" data-current-min="{{ amount_min }}"
-                    data-current-max="{{ amount_max }}"></div>
-                <input type="hidden" name="amount_min" id="amount_min" value="{{ amount_min }}">
-                <input type="hidden" name="amount_max" id="amount_max" value="{{ amount_max }}">
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="id_category" class="form-label">Kategorie</label>
-                {{ filter.form.category }}
-            </div>
-
-            <div class="col-md-6">
-                <label for="id_description" class="form-label">Popis obsahuje</label>
-                {{ filter.form.description }}
-            </div>
-        </div>
-
-        <div class="row-mb-3">
-            <label for="id_tags" class="form-label">Filtrované tagy</label>
-            <div class="d-flex flex-wrap">
-                {{ filter.form.tags }}
-                {% for tag in tags %}
-                    <div class="form-check">
-                        <input type="checkbox" name="tags" value="{{ tag }}" checked class="form-check-input">
-                        <label class="form-check-label">{{ tag }}</label>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
+        {{ filter.form|crispy }}
 
         <!-- Tlačítko pro odeslání formuláře a tlačítko pro reset stránky bez filtrů-->
         <div class="d-grid gap-2 mt-3 mb-3 d-md-block">
@@ -98,130 +51,56 @@
             </tr>
         </tbody>
     </table>
-    <div class="d-grid gap-2 d-md-block">
-        <a href="{% url 'export-transactions-csv' %}?{% query_transform %}" class="btn btn-secondary">Export filtrovaných transakcí do CSV</a>
-    </div>
     {% endif %}
+
 </div>
 
 <h2>Seznam transakcí</h2>
-<!-- Formulář pro hromadnou úpravu transakcí -->
-<form id="bulk-action-form" method="post" action="{% url 'bulk-transaction-action' %}">
-    {% csrf_token %}
-    <div class="row mb-3">
-        <div class="col-md-3">
-            <label for="id_bulk_tag" class="form-label">Přiřadit tag</label>
-            <select name="bulk_tag" id="id_bulk_tag" class="form-control">
-                <option value="">Vyberte tag</option>
-                {% for tag in all_tags %}
-                    <option value="{{ tag.id }}">{{ tag.name }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit" name="action" value="assign_tag" class="btn btn-warning">Přiřadit tag transakcím</button>
-        </div>
-        <div class="col-md-3">
-            <label for="id_bulk_category" class="form-label">Změnit kategorii</label>
-            <select name="bulk_category" id="id_bulk_category" class="form-control">
-                <option value="">Vyberte kategorii</option>
-                {% for category in all_categories %}
-                    <option value="{{ category.id }}">{{ category.name }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit" name="action" value="change_category" class="btn btn-warning">Změnit vybrané transakce</button>
-        </div>
-        <div class="col-md-3">
-            <label for="id_bulk_delete" class="form-label">Akce</label>
-            <button type="submit" name="action" value="delete" class="btn btn-danger">Smazat vybrané transakce</button>
-        </div>
-    </div>
+<!-- Formulář pro hromadnou úpravu transakcí ??? -->
 
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="select-all"></th>
+                <th>Datum</th>
+                <th>Kategorie</th>
+                <th>Částka</th>
+                <th>Tagy</th>
+                <th>Akce</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
                 <tr>
-                    <th><input type="checkbox" id="select-all"></th>
-                    <th>Datum</th>
-                    <th>Kategorie</th>
-                    <th>Částka</th>
-                    <th>Tagy</th>
-                    <th>Akce</th>
+                    <td><input type="checkbox" name="selected_transactions" value="{{ transaction.id }}" class="transaction-checkbox"></td>
+                    <td>{{ transaction.datestamp|date:"d-m-Y" }}</td>
+                    <td>{{ transaction.category.name }}</td>
+                    <td>
+                        {% if transaction.adjusted_amount < 0 %}
+                            <span class="text-danger">{{ transaction.adjusted_amount }} CZK</span>
+                        {% else %}
+                            <span class="text-success">{{ transaction.adjusted_amount }} CZK</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for tag in transaction.tags.all %}
+                            <span class="badge" style="background-color: {{ tag.color }};">{{ tag.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">Bez tagů</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <a href="{% url 'transaction-edit' transaction.id %}" class="btn btn-secondary btn-sm">Upravit</a>
+                        <a href="{% url 'transaction-delete' transaction.id %}" class="btn btn-danger btn-sm">Smazat</a>
+                        <a href="{% url 'transaction-detail' transaction.id %}" class="btn btn-secondary btn-sm">Detail</a>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                {% for transaction in transactions %}
-                    <tr>
-                        <td><input type="checkbox" name="selected_transactions" value="{{ transaction.id }}" class="transaction-checkbox"></td>
-                        <td>{{ transaction.datestamp|date:"d-m-Y" }}</td>
-                        <td>{{ transaction.category.name }}</td>
-                        <td>
-                            {% if transaction.adjusted_amount < 0 %}
-                                <span class="text-danger">{{ transaction.adjusted_amount }} CZK</span>
-                            {% else %}
-                                <span class="text-success">{{ transaction.adjusted_amount }} CZK</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% for tag in transaction.tags.all %}
-                                <span class="badge" style="background-color: {{ tag.color }};">{{ tag.name }}</span>
-                            {% empty %}
-                                <span class="text-muted">Bez tagů</span>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            <a href="{% url 'transaction-edit' transaction.id %}" class="btn btn-secondary btn-sm">Upravit</a>
-                            <a href="{% url 'transaction-delete' transaction.id %}" class="btn btn-danger btn-sm">Smazat</a>
-                            <a href="{% url 'transaction-detail' transaction.id %}" class="btn btn-secondary btn-sm">Detail</a>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</form>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 <!-- Stránkování -->
-<nav aria-label="Page navigation" class="mt-3">
-    <ul class="pagination justify-content-center">
-        {% if transactions.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?{% query_transform page=1 %}">&laquo; první</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?{% query_transform page=transactions.previous_page_number %}">předchozí</a>
-            </li>
-        {% endif %}
-
-        {% for page_num in transactions.paginator.page_range %}
-            {% if transactions.number == page_num %}
-                <li class="page-item active">
-                    <span class="page-link">{{ page_num }}</span>
-                </li>
-            {% elif page_num > transactions.number|add:'-3' and page_num < transactions.number|add:'3' %}
-                <li class="page-item">
-                    <a class="page-link" href="?{% query_transform page=page_num %}">{{ page_num }}</a>
-                </li>
-            {% endif %}
-        {% endfor %}
-
-        {% if transactions.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?{% query_transform page=transactions.next_page_number %}">další</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?{% query_transform page=transactions.paginator.num_pages %}">poslední &raquo;</a>
-            </li>
-        {% endif %}
-    </ul>
-</nav>
-
-<script>
-    // Zaškrtnutí/odškrtnutí všech checkboxů při kliknutí na checkbox v hlavičce
-    document.getElementById('select-all').addEventListener('click', function() {
-        const checkboxes = document.querySelectorAll('.transaction-checkbox');
-        checkboxes.forEach(function(checkbox) {
-            checkbox.checked = document.getElementById('select-all').checked;
-        });
-    });
-</script>
 
 {% endblock %}
