@@ -168,6 +168,7 @@ class BookContextMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['all_books'] = Book.objects.filter(owner=self.request.user)
         context['current_book'] = self.get_current_book()
         return context
 
@@ -692,9 +693,9 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
             return self.export_transactions_to_csv(request, transactions)
         elif action == 'move_to_book':
             return self.move_transactions_to_book(request, transactions)
-
-        messages.error(request, "Neplatná akce.")
-        return redirect('transaction-list')
+        else:
+            messages.error(request, "Neplatná akce.")
+            return redirect('transaction-list')
 
     def assign_tag(self, request, transactions, book):
         """Přiřadí tag vybraným transakcím."""
@@ -707,6 +708,8 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
         for transaction in transactions:
             transaction.tags.add(tag)
         messages.success(request, f"{transactions.count()} transakcím byl přiřazen tag: {tag.name}.")
+
+        # Přesměrování na stránku s původními filtry
         return redirect(self.get_redirect_url_with_filters(request))
 
     def remove_tag(self, request, transactions, book):
@@ -736,9 +739,8 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
     def delete_transactions(self, request, transactions):
         """Smaže vybrané transakce."""
-        count = transactions.count()
         transactions.delete()
-        messages.success(request, f"Smazáno {count} transakcí.")
+        messages.success(request, f"Smazáno {transactions.count()} transakcí.")
         return redirect(self.get_redirect_url_with_filters(request))
 
     def export_transactions_to_csv(self, request, transactions):
@@ -775,13 +777,49 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
         return response
 
     def move_transactions_to_book(self, request, transactions):
-        """Přesune vybrané transakce do jiné knihy."""
+        """Přesune vybrané transakce do jiné knihy a zajistí vytvoření chybějících tagů a kategorií."""
         new_book_id = request.POST.get('bulk_book')
         if not new_book_id:
             messages.warning(request, "Nevybrali jste cílovou knihu.")
             return redirect(self.get_redirect_url_with_filters(request))
 
-        new_book = get_object_or_404(Book, id=new_book_id, owner=request.user)  # Kontrola, zda kniha patří uživateli
-        transactions.update(book=new_book)  # Aktualizace knihy u vybraných transakcí
-        messages.success(request, f"Vybrané transakce byly přesunuty do knihy: {new_book.name}.")
+        # Kontrola, zda cílová kniha patří uživateli
+        new_book = get_object_or_404(Book, id=new_book_id, owner=request.user)
+
+        # Procházíme každou transakci a zpracováváme tagy a kategorie
+        for transaction in transactions:
+            # Tagy - Zkontrolujeme, zda tagy existují v nové knize, jinak je vytvoříme s kopiemi atributů
+            new_tags = []
+            for tag in transaction.tags.all():
+                # Zkontrolujeme, zda tag již existuje v nové knize
+                new_tag, created = Tag.objects.get_or_create(
+                    name=tag.name,
+                    book=new_book,
+                    defaults={'color': tag.color, 'description': tag.description}
+                )
+                new_tags.append(new_tag)  # Přidáme nový nebo existující tag do seznamu
+            """Pokud v nové knize existuje tag se stejným názvem, zachovává se barva a popisek tagu z nové knihy 
+            nikoli tagu z knihy původní."""
+
+            # Nastavíme transakci nové tagy z nové knihy
+            transaction.tags.set(new_tags)
+
+            # Kategorie - Zkontrolujeme, zda kategorie existuje v nové knize, jinak ji vytvoříme s kopiemi atributů
+            if transaction.category:
+                new_category, created = Category.objects.get_or_create(
+                    name=transaction.category.name,
+                    book=new_book,
+                    defaults={'color': transaction.category.color, 'description': transaction.category.description}
+                )
+                transaction.category = new_category  # Aktualizujeme kategorii na tu z nové knihy
+
+            # Případné označení transakce tagem "přesunuto"
+            moved_tag, created = Tag.objects.get_or_create(name="Přesunuto", book=new_book)
+            transaction.tags.add(moved_tag)
+
+            # Přesun transakce do nové knihy
+            transaction.book = new_book
+            transaction.save()
+
+        messages.success(request, f"{transactions.count()} vybrané/ých transakce/í byly přesunuty do knihy: {new_book.name}.")
         return redirect(self.get_redirect_url_with_filters(request))
