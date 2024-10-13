@@ -182,6 +182,11 @@
 document.getElementById('bulk-action-form').addEventListener('submit', function(event) {
     updateSelectedTransactionsInput();  // Aktualizace skrytého pole s transakcemi
     console.log('Hodnota skrytého pole před odesláním:', document.getElementById('selected-transactions').value);
+
+    // Odstraníme atribut "name" z checkboxů, aby nebyly součástí odeslaných dat
+    document.querySelectorAll('.transaction-checkbox').forEach(function(checkbox) {
+        checkbox.removeAttribute('name');
+    });
 });
 
 // Uchovávej seznam vybraných transakcí pomocí localStorage
@@ -284,6 +289,5 @@ function fetchAllTransactionIds() {
     .then(data => data.transaction_ids.map(id => id.toString()));  // Konvertujeme všechna ID na řetězce
 }
 </script>
-
 
 {% endblock %}
