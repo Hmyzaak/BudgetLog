@@ -7,7 +7,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, T
 from django.urls import reverse, reverse_lazy
 from django_filters.views import FilterView
 from django.utils.dateformat import format
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, QueryDict
 from decimal import Decimal
 from datetime import date
 from .filters import TransactionFilter
@@ -641,48 +641,6 @@ class DashboardView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixi
         return context
 
 
-class ExportTransactionsCSVView(LoginRequiredMixin, BookContextMixin, FilterView):
-    filterset_class = TransactionFilter
-
-    def get_queryset(self):
-        # Použití stejné logiky filtrace jako v TransactionListView
-        filterset = TransactionFilter(self.request.GET,
-                                      queryset=Transaction.objects.filter(book=self.get_current_book()))
-        return filterset.qs
-
-    def get(self, request, *args, **kwargs):
-        # Vytvoření CSV souboru na základě filtrování
-        queryset = self.get_queryset()
-
-        # Příprava HTTP odpovědi
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="transactions_export.csv"'
-
-        # Použití StringIO pro zápis do paměti
-        output = StringIO()
-
-        # Vytvoření CSV writeru s obalením do UTF-8 pomocí TextIOWrapper
-        writer = csv.writer(output)
-        # Zápis hlavičky do CSV
-        writer.writerow(['Datum', 'Kategorie', 'Částka', 'Tagy', 'Popis', 'Typ', 'Kniha'])
-
-        # Zápis dat do CSV
-        for transaction in queryset:
-            writer.writerow([
-                transaction.datestamp,
-                transaction.category.name,
-                transaction.adjusted_amount,
-                transaction.display_tags(transaction),
-                transaction.description,
-                transaction.type,
-                transaction.book,
-            ])
-
-        # Vrácení CSV výstupu ve správném kódování UTF-8
-        response.write(output.getvalue().encode('utf-8-sig'))
-        return response
-
-
 class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
     """Umožňuje provádět hromadné operace na vyfiltrovaných transakcích."""
     filterset_class = TransactionFilter
@@ -691,6 +649,17 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
         """Získá vyfiltrované transakce podle aktuálních filtrů."""
         filterset = TransactionFilter(request.GET, queryset=Transaction.objects.filter(book=self.get_current_book()))
         return filterset.qs
+
+    def get_redirect_url_with_filters(self, request):
+        """Vrátí URL zpět na stránku s transakcemi s původními filtry."""
+        # Vytvoření URL na základě filtrů z requestu
+        base_url = reverse('transaction-list')  # 'transaction-list' je URL jméno vaší stránky s transakcemi
+        query_params = request.POST.copy()  # Zkopíruje původní POST parametry, které zahrnují i filtry z GET
+        query_params.pop('csrfmiddlewaretoken', None)  # Odstraní CSRF token, ten do URL nepatří
+        query_params.pop('selected_transactions', None)  # Odstraní vybrané transakce, ty nejsou pro URL potřeba
+        if query_params:
+            return f"{base_url}?{query_params.urlencode()}"
+        return base_url
 
     def post(self, request, *args, **kwargs):
         # Získání ID aktuální knihy
@@ -705,51 +674,114 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
             messages.warning(request, "Nevybrali jste žádné transakce.")
             return redirect('transaction-list')
 
+        # Převedeme seznam id transakcí z řetězce na seznam integerů
         transaction_ids = [int(tid) for tid in selected_transactions.split(',') if tid]
         transactions = Transaction.objects.filter(id__in=transaction_ids)
 
-        # Zpracování jednotlivých akcí
+        # Zpracování jednotlivých akcí podle toho, co bylo zvoleno za akci
         action = request.POST.get('action')
         if action == 'assign_tag':
             return self.assign_tag(request, transactions, book)
+        elif action == 'remove_tag':
+            return self.remove_tag(request, transactions, book)
         elif action == 'change_category':
             return self.change_category(request, transactions, book)
         elif action == 'delete':
             return self.delete_transactions(request, transactions)
+        elif action == 'export_csv':
+            return self.export_transactions_to_csv(request, transactions)
+        elif action == 'move_to_book':
+            return self.move_transactions_to_book(request, transactions)
 
         messages.error(request, "Neplatná akce.")
         return redirect('transaction-list')
 
     def assign_tag(self, request, transactions, book):
+        """Přiřadí tag vybraným transakcím."""
         tag_id = request.POST.get('bulk_tag')
         if not tag_id:
             messages.warning(request, "Nevybrali jste žádný tag.")
-            return redirect('transaction-list')
+            return redirect(self.get_redirect_url_with_filters(request))
 
         tag = get_object_or_404(Tag, id=tag_id, book=book)  # Tag musí být z aktuální knihy
-
-        # Debugging - výpis transakcí
-        print("Selected transaction IDs:", [transaction.id for transaction in transactions])
-
-        # Přiřazení tagu ke všem vybraným transakcím
         for transaction in transactions:
             transaction.tags.add(tag)
-        messages.success(request, f"Přiřazeno {transactions.count()} transakcím tag: {tag.name}.")
-        return redirect('transaction-list')
+        messages.success(request, f"{transactions.count()} transakcím byl přiřazen tag: {tag.name}.")
+        return redirect(self.get_redirect_url_with_filters(request))
+
+    def remove_tag(self, request, transactions, book):
+        """Odebere tag z vybraných transakcí."""
+        tag_id = request.POST.get('bulk_remove_tag')
+        if not tag_id:
+            messages.warning(request, "Nevybrali jste žádný tag k odebrání.")
+            return redirect(self.get_redirect_url_with_filters(request))
+
+        tag = get_object_or_404(Tag, id=tag_id, book=book)  # Tag musí být z aktuální knihy
+        for transaction in transactions:
+            transaction.tags.remove(tag)
+        messages.success(request, f"{transactions.count()} transakcím byl odebrán tag: {tag.name}.")
+        return redirect(self.get_redirect_url_with_filters(request))
 
     def change_category(self, request, transactions, book):
+        """Změní kategorii vybraných transakcí."""
         category_id = request.POST.get('bulk_category')
         if not category_id:
             messages.warning(request, "Nevybrali jste žádnou kategorii.")
-            return redirect('transaction-list')
+            return redirect(self.get_redirect_url_with_filters(request))
 
         category = get_object_or_404(Category, id=category_id, book=book)  # Kategorie musí být z aktuální knihy
         transactions.update(category=category)
         messages.success(request, f"Kategorie změněna u {transactions.count()} transakcí na: {category.name}.")
-        return redirect('transaction-list')
+        return redirect(self.get_redirect_url_with_filters(request))
 
     def delete_transactions(self, request, transactions):
+        """Smaže vybrané transakce."""
         count = transactions.count()
         transactions.delete()
         messages.success(request, f"Smazáno {count} transakcí.")
-        return redirect('transaction-list')
+        return redirect(self.get_redirect_url_with_filters(request))
+
+    def export_transactions_to_csv(self, request, transactions):
+        """Exportuje vybrané transakce do CSV souboru."""
+        # Nastavení HTTP odpovědi pro CSV export
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="transactions.csv"'
+
+        # Použití StringIO pro zápis do paměti
+        output = StringIO()
+
+        # Vytvoření CSV writeru s obalením do UTF-8 pomocí TextIOWrapper
+        writer = csv.writer(output)
+
+        # Zápis hlavičky do CSV
+        writer.writerow(['ID', 'Datum', 'Kategorie', 'Částka', 'Tagy', 'Popis', 'Typ', 'Kniha'])
+
+        # Záznamy do CSV
+        for transaction in transactions:
+            writer.writerow([
+                transaction.id,
+                transaction.datestamp,
+                transaction.category.name,
+                transaction.adjusted_amount,
+                transaction.display_tags(transaction),
+                transaction.description,
+                transaction.type,
+                transaction.book,
+            ])
+
+        # Vrácení CSV výstupu ve správném kódování UTF-8
+        response.write(output.getvalue().encode('utf-8-sig'))
+
+        return response
+
+    def move_transactions_to_book(self, request, transactions):
+        """Přesune vybrané transakce do jiné knihy."""
+        new_book_id = request.POST.get('bulk_book')
+        if not new_book_id:
+            messages.warning(request, "Nevybrali jste cílovou knihu.")
+            return redirect(self.get_redirect_url_with_filters(request))
+
+        new_book = get_object_or_404(Book, id=new_book_id, owner=request.user)  # Kontrola, zda kniha patří uživateli
+        transactions.update(book=new_book)  # Aktualizace knihy u vybraných transakcí
+        messages.success(request, f"Vybrané transakce byly přesunuty do knihy: {new_book.name}.")
+        return redirect(self.get_redirect_url_with_filters(request))

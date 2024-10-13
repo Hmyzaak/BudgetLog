@@ -63,7 +63,13 @@
     <input type="hidden" id="selected-transactions" name="selected_transactions" value="">
     <input type="hidden" id="select-all-input" name="select_all" value="false">
 
+    <!-- Přidání GET parametrů jako hidden inputs -->
+    {% for key, value in request.GET.items %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+    {% endfor %}
+
     <div class="row mb-3">
+        <!-- Přiřadit nový tag -->
         <div class="col-md-3">
             <label for="id_bulk_tag" class="form-label">Přiřadit nový tag</label>
             <div class="d-grid gap-2 mb-3 d-md-block">
@@ -76,6 +82,22 @@
                 <button type="submit" name="action" value="assign_tag" class="btn btn-warning">Přiřadit</button>
             </div>
         </div>
+
+        <!-- Odebrat tag -->
+        <div class="col-md-3">
+            <label for="id_bulk_remove_tag" class="form-label">Odebrat tag</label>
+            <div class="d-grid gap-2 mb-3 d-md-block">
+                <select name="bulk_remove_tag" id="id_bulk_remove_tag" class="form-control">
+                    <option value="">Vyberte tag k odebrání</option>
+                    {% for tag in all_tags %}
+                        <option value="{{ tag.id }}">{{ tag.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" name="action" value="remove_tag" class="btn btn-warning">Odebrat</button>
+            </div>
+        </div>
+
+        <!-- Změnit kategorii -->
         <div class="col-md-3">
             <label for="id_bulk_category" class="form-label">Změnit kategorii</label>
             <div class="d-grid gap-2 mb-3 d-md-block">
@@ -88,14 +110,39 @@
                 <button type="submit" name="action" value="change_category" class="btn btn-warning">Změnit</button>
             </div>
         </div>
+
+        <!-- Smazat vybrané transakce -->
         <div class="col-md-3">
-            <label for="id_bulk_delete" class="form-label">Akce</label><br>
+            <label for="id_bulk_delete" class="form-label">Smazat transakce</label>
             <div class="d-grid gap-2 mb-3 d-md-block">
                 <button type="submit" name="action" value="delete" class="btn btn-danger">Smazat vybrané transakce</button>
             </div>
         </div>
     </div>
 
+    <div class="row mb-3">
+        <!-- Export do CSV -->
+        <div class="col-md-3">
+            <label for="id_bulk_export_csv" class="form-label">Exportovat do CSV</label>
+            <div class="d-grid gap-2 mb-3 d-md-block">
+                <button type="submit" name="action" value="export_csv" class="btn btn-info">Exportovat</button>
+            </div>
+        </div>
+
+        <!-- Přesun do jiné knihy -->
+        <div class="col-md-3">
+            <label for="id_bulk_book" class="form-label">Přesunout do jiné knihy</label>
+            <div class="d-grid gap-2 mb-3 d-md-block">
+                <select name="bulk_book" id="id_bulk_book" class="form-control">
+                    <option value="">Vyberte cílovou knihu</option>
+                    {% for book in all_books %}
+                        <option value="{{ book.id }}">{{ book.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" name="action" value="move_to_book" class="btn btn-secondary">Přesunout</button>
+            </div>
+        </div>
+    </div>
     <h3>Seznam transakcí</h3>
     <table class="table table-striped table-hover table-responsive">
         <thead>
