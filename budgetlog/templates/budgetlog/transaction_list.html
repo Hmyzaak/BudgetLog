@@ -1,5 +1,6 @@
 {% extends "base_generic.html" %}
 {% load crispy_forms_tags %}
+{% load query_transform %}
 
 {% block content %}
 <h1>Přehled transakcí</h1>
@@ -22,47 +23,85 @@
             <a href="{% url 'transaction-list' %}" class="btn btn-info">Zruš filtry</a>
         </div>
     </form>
-
-    {% if transactions %}
-    <h2>Souhrn filtrovaných transakcí</h2>
-    <table class="table table-bordered table-striped table-hover">
-        <thead class="table-info">
-            <tr>
-                <th>Počet transakcí</th>
-                <th>Průměrná částka</th>
-                <th>Nejvyšší částka</th>
-                <th>Nejnižší částka</th>
-                <th>Bilance</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ transaction_count }}</td>
-                <td>{{ average_amount|floatformat:2 }} CZK</td>
-                <td>{{ max_transaction_amount|floatformat:2 }} CZK</td>
-                <td>{{ min_transaction_amount|floatformat:2 }} CZK</td>
-                <td>
-                    {% if balance < 0 %}
-                        <span class="text-danger">{{ balance|floatformat:2 }} CZK</span>
-                    {% else %}
-                        <span class="text-success">{{ balance|floatformat:2 }} CZK</span>
-                    {% endif %}
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    {% endif %}
-
 </div>
 
-<h2>Seznam transakcí</h2>
-<!-- Formulář pro hromadnou úpravu transakcí ??? -->
+<!-- Souhrn filtrovaných transakcí -->
+<h3>Souhrn filtrovaných transakcí</h3>
+<table class="table table-bordered table-striped table-hover">
+    <thead class="table-info">
+        <tr>
+            <th>Počet transakcí</th>
+            <th>Průměrná částka</th>
+            <th>Nejvyšší částka</th>
+            <th>Nejnižší částka</th>
+            <th>Bilance</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{ transaction_count }}</td>
+            <td>{{ average_amount|floatformat:2 }} CZK</td>
+            <td>{{ max_transaction_amount|floatformat:2 }} CZK</td>
+            <td>{{ min_transaction_amount|floatformat:2 }} CZK</td>
+            <td>
+                {% if balance < 0 %}
+                    <span class="text-danger">{{ balance|floatformat:2 }} CZK</span>
+                {% else %}
+                    <span class="text-success">{{ balance|floatformat:2 }} CZK</span>
+                {% endif %}
+            </td>
+        </tr>
+    </tbody>
+</table>
 
-<div class="table-responsive">
-    <table class="table table-striped table-hover">
+
+<!-- Hromadné akce pro transakce -->
+<h2>Akce s vybranými transakcemi</h2>
+<p>Pro aplikaci hromadných akcí vyberte konkrétní transakce ze seznamu transakcí níže pomocí zaškrtávacích políček.</p>
+<form id="bulk-action-form" method="post" action="{% url 'bulk-transaction-action' %}">
+    {% csrf_token %}
+    <input type="hidden" id="selected-transactions" name="selected_transactions" value="">
+    <input type="hidden" id="select-all-input" name="select_all" value="false">
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label for="id_bulk_tag" class="form-label">Přiřadit nový tag</label>
+            <div class="d-grid gap-2 mb-3 d-md-block">
+                <select name="bulk_tag" id="id_bulk_tag" class="form-control">
+                    <option value="">Vyberte tag</option>
+                    {% for tag in all_tags %}
+                        <option value="{{ tag.id }}">{{ tag.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" name="action" value="assign_tag" class="btn btn-warning">Přiřadit</button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label for="id_bulk_category" class="form-label">Změnit kategorii</label>
+            <div class="d-grid gap-2 mb-3 d-md-block">
+                <select name="bulk_category" id="id_bulk_category" class="form-control">
+                    <option value="">Vyberte kategorii</option>
+                    {% for category in all_categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" name="action" value="change_category" class="btn btn-warning">Změnit</button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label for="id_bulk_delete" class="form-label">Akce</label><br>
+            <div class="d-grid gap-2 mb-3 d-md-block">
+                <button type="submit" name="action" value="delete" class="btn btn-danger">Smazat vybrané transakce</button>
+            </div>
+        </div>
+    </div>
+
+    <h3>Seznam transakcí</h3>
+    <table class="table table-striped table-hover table-responsive">
         <thead>
             <tr>
-                <th><input type="checkbox" id="select-all"></th>
+                <th><input type="checkbox" id="select-all">Vybrat vše</th>
+                <th>ID transakce</th>
                 <th>Datum</th>
                 <th>Kategorie</th>
                 <th>Částka</th>
@@ -74,6 +113,7 @@
             {% for transaction in transactions %}
                 <tr>
                     <td><input type="checkbox" name="selected_transactions" value="{{ transaction.id }}" class="transaction-checkbox"></td>
+                    <td>{{ transaction.id }}</td>
                     <td>{{ transaction.datestamp|date:"d-m-Y" }}</td>
                     <td>{{ transaction.category.name }}</td>
                     <td>
@@ -99,8 +139,151 @@
             {% endfor %}
         </tbody>
     </table>
-</div>
+</form>
 
 <!-- Stránkování -->
+<nav aria-label="Page navigation" class="mt-3">
+    <ul class="pagination justify-content-center">
+        {% if transactions.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{% query_transform page=1 %}">&laquo; první</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?{% query_transform page=transactions.previous_page_number %}">předchozí</a>
+            </li>
+        {% endif %}
+
+        {% for page_num in transactions.paginator.page_range %}
+            {% if transactions.number == page_num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+            {% elif page_num > transactions.number|add:'-3' and page_num < transactions.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% query_transform page=page_num %}">{{ page_num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if transactions.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{% query_transform page=transactions.next_page_number %}">další</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?{% query_transform page=transactions.paginator.num_pages %}">poslední &raquo;</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+
+<!-- Scripty -->
+<script>
+// Zajistíme, že při odeslání formuláře se skryté pole 'selected-transactions' aktualizuje o všechny transakce z localStorage
+document.getElementById('bulk-action-form').addEventListener('submit', function(event) {
+    updateSelectedTransactionsInput();  // Aktualizace skrytého pole s transakcemi
+    console.log('Hodnota skrytého pole před odesláním:', document.getElementById('selected-transactions').value);
+});
+
+// Uchovávej seznam vybraných transakcí pomocí localStorage
+let selectedTransactions = new Set(JSON.parse(localStorage.getItem('selectedTransactions')) || []);
+let selectAll = false;
+
+// Funkce pro aktualizaci skrytého pole s vybranými transakcemi před odesláním formuláře
+function updateSelectedTransactionsInput() {
+    document.getElementById('selected-transactions').value = Array.from(selectedTransactions).join(',');
+    console.log('Aktuální vybrané transakce:', Array.from(selectedTransactions));
+}
+
+// Funkce pro ukládání seznamu vybraných transakcí do localStorage
+function saveSelectedTransactions() {
+    localStorage.setItem('selectedTransactions', JSON.stringify(Array.from(selectedTransactions)));
+}
+
+// Funkce pro zaškrtnutí/odškrtnutí všech checkboxů na aktuální stránce
+function checkAllVisibleCheckboxes(checked) {
+    document.querySelectorAll('.transaction-checkbox').forEach(function(checkbox) {
+        checkbox.checked = checked;
+        if (checked) {
+            selectedTransactions.add(checkbox.value.toString());  // Ukládáme jako řetězce
+        } else {
+            selectedTransactions.delete(checkbox.value.toString());
+        }
+    });
+    updateSelectedTransactionsInput();
+    saveSelectedTransactions();
+}
+
+// Při kliknutí na checkbox "vybrat vše"
+document.getElementById('select-all').addEventListener('click', function() {
+    selectAll = this.checked;
+    document.getElementById('select-all-input').value = selectAll ? 'true' : 'false';
+
+    if (selectAll) {
+        // Při zaškrtnutí "vybrat vše" uložíme všechny transakce z aktuálního filtru
+        fetchAllTransactionIds().then(allTransactionIds => {
+            allTransactionIds.forEach(id => selectedTransactions.add(id.toString()));  // Ukládáme jako řetězce
+            updateSelectedTransactionsInput();
+            saveSelectedTransactions();
+
+            // Po získání všech ID aktualizujeme vizuálně všechny checkboxy
+            checkAllVisibleCheckboxes(true);  // Zajistí zaškrtnutí všech checkboxů na aktuální stránce
+        });
+    } else {
+        // Pokud odškrtneme "vybrat vše", vymažeme všechny vybrané transakce
+        selectedTransactions.clear();
+        updateSelectedTransactionsInput();
+        saveSelectedTransactions();
+        checkAllVisibleCheckboxes(false);  // Zajistí odškrtnutí všech checkboxů na aktuální stránce
+    }
+});
+
+// Přidání/odebrání transakcí při výběru checkboxů
+document.querySelectorAll('.transaction-checkbox').forEach(function(checkbox) {
+    checkbox.addEventListener('change', function() {
+        const id = this.value.toString();  // Pracujeme s řetězci
+        if (this.checked) {
+            selectedTransactions.add(id);
+        } else {
+            selectedTransactions.delete(id);
+        }
+        updateSelectedTransactionsInput();
+        saveSelectedTransactions();
+    });
+
+    // Pokud už je transakce ve vybraných, automaticky ji zaškrtneme
+    if (selectedTransactions.has(checkbox.value.toString())) {
+        checkbox.checked = true;
+    }
+});
+
+// Načti vybrané transakce při načtení stránky
+window.onload = function() {
+    const selectedValues = JSON.parse(localStorage.getItem('selectedTransactions')) || [];
+    selectedValues.forEach(function(value) {
+        selectedTransactions.add(value.toString());  // Zajišťujeme, že všechna ID jsou řetězce
+    });
+
+    // Při načtení stránky zaškrtni všechny checkboxy, které jsou již vybrané
+    document.querySelectorAll('.transaction-checkbox').forEach(function(checkbox) {
+        if (selectedTransactions.has(checkbox.value.toString())) {
+            checkbox.checked = true;
+        }
+    });
+
+    updateSelectedTransactionsInput();
+};
+
+// Funkce pro získání všech transakčních ID z aktuálního filtru (přes AJAX)
+function fetchAllTransactionIds() {
+    return fetch(window.location.href, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => data.transaction_ids.map(id => id.toString()));  // Konvertujeme všechna ID na řetězce
+}
+</script>
+
 
 {% endblock %}
