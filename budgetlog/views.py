@@ -673,7 +673,7 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
         if not selected_transactions:
             messages.warning(request, "Nevybrali jste žádné transakce.")
-            return redirect('transaction-list')
+            return redirect(self.get_redirect_url_with_filters(request))
 
         # Převedeme seznam id transakcí z řetězce na seznam integerů
         transaction_ids = [int(tid) for tid in selected_transactions.split(',') if tid]
@@ -695,7 +695,7 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
             return self.move_transactions_to_book(request, transactions)
         else:
             messages.error(request, "Neplatná akce.")
-            return redirect('transaction-list')
+            return redirect(self.get_redirect_url_with_filters(request))
 
     def assign_tag(self, request, transactions, book):
         """Přiřadí tag vybraným transakcím."""
