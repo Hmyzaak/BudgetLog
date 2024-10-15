@@ -225,14 +225,55 @@
 
 <!-- Scripty -->
 <script>
-// Zajistíme, že při odeslání formuláře se skryté pole 'selected-transactions' aktualizuje o všechny transakce z localStorage
+// Event listener na odeslání formuláře
 document.getElementById('bulk-action-form').addEventListener('submit', function(event) {
     updateSelectedTransactionsInput();  // Aktualizace skrytého pole s transakcemi
+
     console.log('Hodnota skrytého pole před odesláním:', document.getElementById('selected-transactions').value);
 
     // Odstraníme atribut "name" z checkboxů, aby nebyly součástí odeslaných dat
     document.querySelectorAll('.transaction-checkbox').forEach(function(checkbox) {
         checkbox.removeAttribute('name');
+    });
+
+    // Odeslání formuláře přes AJAX, aby bylo možné čekat na odpověď
+    event.preventDefault();  // Zabraňte klasickému odeslání formuláře
+
+    const formData = new FormData(this);  // Vytvoříme FormData objekt z formuláře
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;  // Získáme CSRF token
+
+    const activeButton = document.activeElement;  // Získáme aktivní tlačítko
+    formData.set('action', activeButton.value);  // Aktualizujeme hodnotu action v FormData
+
+    // Použijte explicitní URL pro odesílání požadavku
+    const actionUrl = this.getAttribute('action');
+
+    fetch(actionUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken,
+        },
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();  // Předpokládáme, že dostaneme JSON odpověď
+        } else {
+            throw new Error('Nastala chyba při zpracování akce.');
+        }
+    })
+    .then(data => {
+        // Po úspěšné akci vymažeme vybrané transakce z localStorage a checkboxů
+        selectedTransactions.clear();
+        updateSelectedTransactionsInput();
+        saveSelectedTransactions();
+        checkAllVisibleCheckboxes(false);
+
+        // Přesměrujeme uživatele zpět na aktuální stránku s filtrem a stránkováním
+        window.location.href = data.redirect_url || window.location.href;  // Přesměrujeme na původní stránku
+    })
+    .catch(error => {
+        console.error('Chyba při odesílání formuláře:', error);
     });
 });
 

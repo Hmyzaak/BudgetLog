@@ -673,7 +673,7 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
         if not selected_transactions:
             messages.warning(request, "Nevybrali jste žádné transakce.")
-            return redirect(self.get_redirect_url_with_filters(request))
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
         # Převedeme seznam id transakcí z řetězce na seznam integerů
         transaction_ids = [int(tid) for tid in selected_transactions.split(',') if tid]
@@ -695,53 +695,52 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
             return self.move_transactions_to_book(request, transactions)
         else:
             messages.error(request, "Neplatná akce.")
-            return redirect(self.get_redirect_url_with_filters(request))
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
     def assign_tag(self, request, transactions, book):
         """Přiřadí tag vybraným transakcím."""
         tag_id = request.POST.get('bulk_tag')
         if not tag_id:
             messages.warning(request, "Nevybrali jste žádný tag.")
-            return redirect(self.get_redirect_url_with_filters(request))
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
         tag = get_object_or_404(Tag, id=tag_id, book=book)  # Tag musí být z aktuální knihy
         for transaction in transactions:
             transaction.tags.add(tag)
         messages.success(request, f"{transactions.count()} transakcím byl přiřazen tag: {tag.name}.")
-
         # Přesměrování na stránku s původními filtry
-        return redirect(self.get_redirect_url_with_filters(request))
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
     def remove_tag(self, request, transactions, book):
         """Odebere tag z vybraných transakcí."""
         tag_id = request.POST.get('bulk_remove_tag')
         if not tag_id:
             messages.warning(request, "Nevybrali jste žádný tag k odebrání.")
-            return redirect(self.get_redirect_url_with_filters(request))
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
         tag = get_object_or_404(Tag, id=tag_id, book=book)  # Tag musí být z aktuální knihy
         for transaction in transactions:
             transaction.tags.remove(tag)
         messages.success(request, f"{transactions.count()} transakcím byl odebrán tag: {tag.name}.")
-        return redirect(self.get_redirect_url_with_filters(request))
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
     def change_category(self, request, transactions, book):
         """Změní kategorii vybraných transakcí."""
         category_id = request.POST.get('bulk_category')
         if not category_id:
             messages.warning(request, "Nevybrali jste žádnou kategorii.")
-            return redirect(self.get_redirect_url_with_filters(request))
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
         category = get_object_or_404(Category, id=category_id, book=book)  # Kategorie musí být z aktuální knihy
         transactions.update(category=category)
         messages.success(request, f"Kategorie změněna u {transactions.count()} transakcí na: {category.name}.")
-        return redirect(self.get_redirect_url_with_filters(request))
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
     def delete_transactions(self, request, transactions):
         """Smaže vybrané transakce."""
         transactions.delete()
         messages.success(request, f"Smazáno {transactions.count()} transakcí.")
-        return redirect(self.get_redirect_url_with_filters(request))
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
     def export_transactions_to_csv(self, request, transactions):
         """Exportuje vybrané transakce do CSV souboru."""
@@ -781,7 +780,7 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
         new_book_id = request.POST.get('bulk_book')
         if not new_book_id:
             messages.warning(request, "Nevybrali jste cílovou knihu.")
-            return redirect(self.get_redirect_url_with_filters(request))
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
         # Kontrola, zda cílová kniha patří uživateli
         new_book = get_object_or_404(Book, id=new_book_id, owner=request.user)
@@ -822,4 +821,4 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
             transaction.save()
 
         messages.success(request, f"{transactions.count()} vybrané/ých transakce/í byly přesunuty do knihy: {new_book.name}.")
-        return redirect(self.get_redirect_url_with_filters(request))
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
