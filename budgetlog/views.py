@@ -738,8 +738,9 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
     def delete_transactions(self, request, transactions):
         """Smaže vybrané transakce."""
+        count = transactions.count()
         transactions.delete()
-        messages.success(request, f"Smazáno {transactions.count()} transakcí.")
+        messages.success(request, f"Smazáno {count} transakcí.")
         return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
     def export_transactions_to_csv(self, request, transactions):
@@ -750,8 +751,6 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
         # Použití StringIO pro zápis do paměti
         output = StringIO()
-
-        # Vytvoření CSV writeru s obalením do UTF-8 pomocí TextIOWrapper
         writer = csv.writer(output)
 
         # Zápis hlavičky do CSV
