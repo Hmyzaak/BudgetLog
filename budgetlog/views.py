@@ -390,15 +390,27 @@ class TagListView(ObjectListView):
 class ObjectFormView(LoginRequiredMixin, BookContextMixin):
     template_name = 'budgetlog/object_form.html'
 
-    def get_success_url(self):
-        """Vrátí URL na seznam objektů po úspěšném smazání."""
+    def get_success_url_with_filters(self):
+        """Vrátí URL na seznam objektů s uloženými filtry."""
         model_name = self.model.__name__.lower()
-        return reverse_lazy(f'{model_name}-list')
+        base_url = reverse_lazy(f'{model_name}-list')
+
+        # Získáme filtry z requestu (pokud nějaké existují)
+        query_params = self.request.GET.copy()
+        query_params.pop('csrfmiddlewaretoken', None)
+
+        if query_params:
+            return f"{base_url}?{query_params.urlencode()}"
+        return base_url
+
+    def get_success_url(self):
+        """Vrátí URL na seznam objektů po úspěšné akci s filtry."""
+        return self.get_success_url_with_filters()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['object_singular_akluzativ'] = self.model.object_singular_akluzativ
-        context['list_url_name'] = f'{self.model._meta.model_name}-list'
+        context['list_url_name'] = self.get_success_url_with_filters()  # Přidáme uložené filtry do URL
         return context
 
     def dispatch(self, request, *args, **kwargs):
@@ -454,15 +466,29 @@ class TagUpdateView(ObjectFormView, UpdateView):
 class GenericDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'budgetlog/object_confirm_delete.html'
 
-    def get_success_url(self):
-        """Vrátí URL na seznam objektů po úspěšném smazání."""
+    def get_success_url_with_filters(self):
+        """Vrátí URL na seznam objektů s uloženými filtry."""
         model_name = self.model.__name__.lower()
-        return reverse_lazy(f'{model_name}-list')
+        base_url = reverse_lazy(f'{model_name}-list')
+
+        # Získání pouze GET parametrů (např. z URL)
+        query_params = self.request.GET.copy()
+
+        # Odebereme CSRF token a další nevhodné parametry
+        query_params.pop('csrfmiddlewaretoken', None)
+
+        if query_params:
+            return f"{base_url}?{query_params.urlencode()}"
+        return base_url
+
+    def get_success_url(self):
+        """Vrátí URL na seznam objektů po úspěšné akci s filtry."""
+        return self.get_success_url_with_filters()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['object_singular_akluzativ'] = self.model.object_singular_akluzativ
-        context['list_url_name'] = f'{self.model._meta.model_name}-list'
+        context['list_url_name'] = self.get_success_url_with_filters()  # Přidáme uložené filtry do URL
         return context
 
 
@@ -507,7 +533,7 @@ class MonthDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMi
 
     def get_context_data(self, year, month, **kwargs):
         context = super().get_context_data(**kwargs)
-        transactions = self.get_transactions(year=year, month=month)
+        transactions = Transaction.objects.filter(book=self.get_current_book(), datestamp__year=year, datestamp__month=month)
         total_income, total_expense, total_balance = self.calculate_totals(transactions)
         category_summaries = self.get_category_summaries(transactions, year=year, month=month)
 
@@ -529,7 +555,7 @@ class YearDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMix
 
     def get_context_data(self, year, **kwargs):
         context = super().get_context_data(**kwargs)
-        transactions = self.get_transactions(year=year)
+        transactions = Transaction.objects.filter(book=self.get_current_book(), datestamp__year=year)
         total_income, total_expense, total_balance = self.calculate_totals(transactions)
         months, category_summaries, monthly_balances = self.get_yearly_category_summaries(year)
 
@@ -566,7 +592,7 @@ class YearDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMix
     def get_yearly_category_summaries(self, year):
         """Získá souhrny kategorií a měsíční bilance pro daný rok."""
         current_book = self.get_current_book()
-        transactions = self.get_transactions(year=year)
+        transactions = Transaction.objects.filter(book=self.get_current_book(), datestamp__year=year)
 
         # Pokud se zpracovává aktuální rok, použijeme aktuální měsíc jako počet měsíců, jinak hodnotu 12
         month_count = date.today().month if year == date.today().year else 12
@@ -632,7 +658,7 @@ class DashboardView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixi
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        transactions = self.get_transactions()
+        transactions = Transaction.objects.filter(book=self.get_current_book())
         months_years = transactions.dates('datestamp', 'month', order='DESC')
         years = transactions.dates('datestamp', 'year', order='DESC')
 

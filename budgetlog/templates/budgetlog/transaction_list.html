@@ -179,9 +179,9 @@
                             {% endfor %}
                         </td>
                         <td>
-                            <a href="{% url 'transaction-edit' transaction.id %}" class="btn btn-secondary btn-sm">Upravit</a>
-                            <a href="{% url 'transaction-delete' transaction.id %}" class="btn btn-danger btn-sm">Smazat</a>
-                            <a href="{% url 'transaction-detail' transaction.id %}" class="btn btn-secondary btn-sm">Detail</a>
+                            <a href="{% url 'transaction-edit' transaction.id %}?{{ request.GET.urlencode }}" class="btn btn-secondary btn-sm">Upravit</a>
+                            <a href="{% url 'transaction-delete' transaction.id %}?{{ request.GET.urlencode }}" class="btn btn-danger btn-sm">Smazat</a>
+                            <a href="{% url 'transaction-detail' transaction.id %}?{{ request.GET.urlencode }}" class="btn btn-secondary btn-sm">Detail</a>
                         </td>
                     </tr>
                 {% endfor %}
