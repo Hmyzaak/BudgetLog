@@ -281,32 +281,51 @@ document.getElementById('bulk-action-form').addEventListener('submit', function(
 
 // Event listener pro kliknutí na tlačítko "Export do CSV"
 document.getElementById('export-csv-btn').addEventListener('click', function() {
-    // Aktualizace skrytého pole s vybranými transakcemi
-    updateSelectedTransactionsInput();
-
-    // Výpis do konzole, abychom mohli zkontrolovat, jaká transakční ID jsou v tuto chvíli vybrána
+    updateSelectedTransactionsInput();  // Aktualizace skrytého pole s vybranými transakcemi
     console.log('Hodnota skrytého pole před odesláním:', document.getElementById('selected-transactions').value);
 
-    // Odstraníme atribut "name" ze všech checkboxů s transakcemi, aby checkboxy nebyly odesílány jako součást formuláře
-    // To zajistí, že se při odesílání dat posílají pouze skrytá pole s vybranými transakcemi
+    // Odstraníme atribut "name" ze všech checkboxů
     document.querySelectorAll('.transaction-checkbox').forEach(function(checkbox) {
         checkbox.removeAttribute('name');
     });
 
-    // Nalezneme formulář obsahující transakce
-    const form = document.getElementById('bulk-action-form');
+    const formData = new FormData(document.getElementById('bulk-action-form'));
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    formData.set('action', 'export_csv');  // Specifikujeme, že jde o export CSV
 
-    // Vytvoříme nový hidden input pro specifikaci akce, kterou chceme provést (v tomto případě export CSV)
-    const actionInput = document.createElement('input');
-    actionInput.type = 'hidden';
-    actionInput.name = 'action';
-    actionInput.value = 'export_csv';  // Specifikujeme, že se jedná o export CSV
-
-    // Přidáme hidden input do formuláře
-    form.appendChild(actionInput);
-
-    // Odeslání formuláře
-    form.submit();
+    // Poslání přes AJAX
+    fetch("{% url 'bulk-transaction-action' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken,
+        },
+    })
+    .then(response => {
+        if (response.headers.get('content-type').includes('application/json')) {
+            return response.json();  // Očekáváme JSON odpověď (přesměrování)
+        } else {
+            return response.blob();  // Očekáváme, že backend vrátí CSV (blob)
+        }
+    })
+    .then(data => {
+        if (data.redirect_url) {
+            // Pokud je vrácen JSON s URL, přesměrujeme uživatele
+            window.location.href = data.redirect_url;
+        } else {
+            // Pokud je vráceno CSV, stáhneme soubor
+            const url = window.URL.createObjectURL(data);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'transactions.csv';  // Jméno souboru
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+    })
+    .catch(error => {
+        console.error('Chyba při odesílání exportu do CSV:', error);
+    });
 });
 
 // Uchovávej seznam vybraných transakcí pomocí localStorage
