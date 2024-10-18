@@ -107,7 +107,7 @@ class Tag(models.Model):
         verbose_name_plural = "Tagy"
         unique_together = ('name', 'book')  # Tag musí být jedinečný v rámci knihy
 
-    name = models.CharField(max_length=100, verbose_name="Název tagu",
+    name = models.CharField(max_length=25, verbose_name="Název tagu",
                             help_text="Uveď název tagu.")
     color = models.CharField(max_length=7, default='#000000', verbose_name="Barva tagu",
                              help_text="Barva tagu")
@@ -154,7 +154,7 @@ class Transaction(models.Model):
     description = models.TextField(null=True, blank=True, verbose_name="Popis",
                                    help_text="Zadejte detailnější popis transakce (volitelný).")
     type = models.CharField(max_length=7, choices=TYPE_CHOICES, default='expense', verbose_name="Typ",
-                            help_text="Zvolte, zda je tato transakce výdaj nebo příjem?")
+                            help_text="Zvolte, zda je tato transakce výdaj nebo příjem.")
 
     def display_tags(self, transaction):
         return ', '.join(tag.name for tag in transaction.tags.all())

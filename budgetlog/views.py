@@ -7,7 +7,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, T
 from django.urls import reverse, reverse_lazy
 from django_filters.views import FilterView
 from django.utils.dateformat import format
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, QueryDict
 from decimal import Decimal
 from datetime import date
 from .filters import TransactionFilter
@@ -168,6 +168,7 @@ class BookContextMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['all_books'] = Book.objects.filter(owner=self.request.user)
         context['current_book'] = self.get_current_book()
         return context
 
@@ -201,26 +202,11 @@ class SelectBookView(LoginRequiredMixin, View):
 
 
 class TransactionSummaryMixin:
-    def get_transactions(self, year=None, month=None):
-        """Získá transakce podle roku, měsíce a aktuální knihy."""
-        current_book = self.get_current_book()
-        if not current_book:
-            messages.error(self.request, "Musíte si vybrat knihu.")
-            return redirect('book-list')
-
-        queryset = Transaction.objects.filter(book=current_book)
-        if year:
-            queryset = queryset.filter(datestamp__year=year)
-        if month:
-            queryset = queryset.filter(datestamp__month=month)
-
-        return queryset.order_by('-datestamp')
 
     @staticmethod
     def get_additional_context_data(filtered_qs):
         # Výpočet agregátů (např. průměr, max/min částka) a jejich přidání do kontextu
         return {
-            'max_amount': Transaction.objects.aggregate(Max('amount'))['amount__max'],
             'average_amount': filtered_qs.aggregate(
                 avg_amount=Avg(
                     Case(
@@ -261,13 +247,13 @@ class TransactionSummaryMixin:
         }
 
     @staticmethod
-    def calculate_totals(transactions):
+    def calculate_totals(filtered_qs):
         """Výpočet celkových hodnot pro příjem, výdaje a bilanci."""
-        total_income = transactions.filter(type='income').aggregate(
+        total_income = filtered_qs.filter(type='income').aggregate(
             total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
         )['total']
 
-        total_expense = transactions.filter(type='expense').aggregate(
+        total_expense = filtered_qs.filter(type='expense').aggregate(
             total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
         )['total']
 
@@ -298,20 +284,34 @@ class TransactionSummaryMixin:
 class TransactionListView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixin, FilterView, ListView):
     """Umožňuje vytvořit a držet data pro filtrování v seznamu transakcí a umožňuje stránkování v těchto seznamech."""
     model = Transaction
-    filterset_class = TransactionFilter
     template_name = 'budgetlog/transaction_list.html'
     context_object_name = 'transactions'
-    paginate_by = 30
     ordering = ['-datestamp']
+    filterset_class = TransactionFilter
+    paginate_by = 30
+
+    def get_filterset_kwargs(self, filterset_class):
+        """Přidává aktuální knihu do filtrů."""
+        kwargs = super().get_filterset_kwargs(filterset_class)
+        kwargs['book'] = self.get_current_book()
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        filterset = self.filterset_class(self.request.GET,
-                                         queryset=self.get_queryset(),
-                                         book=self.get_current_book())
+        filterset = self.filterset_class(self.request.GET, queryset=self.get_queryset(), book=self.get_current_book())
         context['filter'] = filterset
-
+        request = self.request
         filtered_qs = filterset.qs
+
+        # Získání tagů a kategorií pouze z aktuální knihy
+        context['all_tags'] = Tag.objects.filter(book=self.get_current_book())
+        context['all_categories'] = Category.objects.filter(book=self.get_current_book())
+
+        # Výpočet souhrnů a přidání do kontextu
+        summary_data = self.get_additional_context_data(filtered_qs)
+        context.update(summary_data)
+
+        # Paginace
         paginator = Paginator(filtered_qs, self.paginate_by)
         page = self.request.GET.get('page')
 
@@ -323,11 +323,22 @@ class TransactionListView(LoginRequiredMixin, BookContextMixin, TransactionSumma
             transactions = paginator.page(paginator.num_pages)
 
         context['transactions'] = transactions
-        # Přidání dalších dat do kontextu (např. bilance, max/min částky atd.)
-        context.update(self.get_additional_context_data(filtered_qs))
-
         return context
 
+    def get(self, request, *args, **kwargs):
+        """Zpracuje GET požadavek a rozhodne, zda vrátí JSON nebo HTML."""
+        if self.is_ajax():
+            # Pokud je požadavek přes AJAX, vrátí JSON odpověď
+            filterset = self.filterset_class(self.request.GET, queryset=self.get_queryset(),
+                                             book=self.get_current_book())
+            all_transaction_ids = list(filterset.qs.values_list('id', flat=True))
+            return JsonResponse({'transaction_ids': all_transaction_ids})
+        else:
+            # Jinak normálně vykreslí stránku s šablonou
+            return super().get(request, *args, **kwargs)
+
+    def is_ajax(self):
+        return self.request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
 
 class TransactionDetailView(LoginRequiredMixin, BookContextMixin, DeleteView):
     """Umožní uživateli náhled na veškeré informace o transakci."""
@@ -631,34 +642,124 @@ class DashboardView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixi
         return context
 
 
-class ExportTransactionsCSVView(LoginRequiredMixin, BookContextMixin, FilterView):
+class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
+    """Umožňuje provádět hromadné operace na vyfiltrovaných transakcích."""
     filterset_class = TransactionFilter
 
-    def get_queryset(self):
-        # Použití stejné logiky filtrace jako v TransactionListView
-        filterset = TransactionFilter(self.request.GET,
-                                      queryset=Transaction.objects.filter(book=self.get_current_book()))
+    def get_filtered_queryset(self, request):
+        """Získá vyfiltrované transakce podle aktuálních filtrů."""
+        filterset = TransactionFilter(request.GET, queryset=Transaction.objects.filter(book=self.get_current_book()))
         return filterset.qs
 
-    def get(self, request, *args, **kwargs):
-        # Vytvoření CSV souboru na základě filtrování
-        queryset = self.get_queryset()
+    def get_redirect_url_with_filters(self, request):
+        """Vrátí URL zpět na stránku s transakcemi s původními filtry."""
+        # Vytvoření URL na základě filtrů z requestu
+        base_url = reverse('transaction-list')  # 'transaction-list' je URL jméno vaší stránky s transakcemi
+        query_params = request.POST.copy()  # Zkopíruje původní POST parametry, které zahrnují i filtry z GET
+        query_params.pop('csrfmiddlewaretoken', None)  # Odstraní CSRF token, ten do URL nepatří
+        query_params.pop('selected_transactions', None)  # Odstraní vybrané transakce, ty nejsou pro URL potřeba
+        if query_params:
+            return f"{base_url}?{query_params.urlencode()}"
+        return base_url
 
-        # Příprava HTTP odpovědi
+    def post(self, request, *args, **kwargs):
+        # Získání ID aktuální knihy
+        print(f"Obsah request.POST požadavku: {request.POST}")
+        book = self.get_current_book()
+
+        # Získání seznamu vybraných transakcí
+        selected_transactions = request.POST.get('selected_transactions')
+        print(f"Získání seznamu vybraných transakcí: {selected_transactions}")
+
+        if not selected_transactions:
+            messages.warning(request, "Nevybrali jste žádné transakce.")
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+        # Převedeme seznam id transakcí z řetězce na seznam integerů
+        transaction_ids = [int(tid) for tid in selected_transactions.split(',') if tid]
+        transactions = Transaction.objects.filter(id__in=transaction_ids)
+
+        # Zpracování jednotlivých akcí podle toho, co bylo zvoleno za akci
+        action = request.POST.get('action')
+        if action == 'assign_tag':
+            return self.assign_tag(request, transactions, book)
+        elif action == 'remove_tag':
+            return self.remove_tag(request, transactions, book)
+        elif action == 'change_category':
+            return self.change_category(request, transactions, book)
+        elif action == 'delete':
+            return self.delete_transactions(request, transactions)
+        elif action == 'export_csv':
+            return self.export_transactions_to_csv(request, transactions)
+        elif action == 'move_to_book':
+            return self.move_transactions_to_book(request, transactions)
+        else:
+            messages.error(request, "Neplatná akce.")
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+    def assign_tag(self, request, transactions, book):
+        """Přiřadí tag vybraným transakcím."""
+        tag_id = request.POST.get('bulk_tag')
+        if not tag_id:
+            messages.warning(request, "Nevybrali jste žádný tag.")
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+        tag = get_object_or_404(Tag, id=tag_id, book=book)  # Tag musí být z aktuální knihy
+        for transaction in transactions:
+            transaction.tags.add(tag)
+        messages.success(request, f"{transactions.count()} transakcím byl přiřazen tag: {tag.name}.")
+        # Přesměrování na stránku s původními filtry
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+    def remove_tag(self, request, transactions, book):
+        """Odebere tag z vybraných transakcí."""
+        tag_id = request.POST.get('bulk_remove_tag')
+        if not tag_id:
+            messages.warning(request, "Nevybrali jste žádný tag k odebrání.")
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+        tag = get_object_or_404(Tag, id=tag_id, book=book)  # Tag musí být z aktuální knihy
+        for transaction in transactions:
+            transaction.tags.remove(tag)
+        messages.success(request, f"{transactions.count()} transakcím byl odebrán tag: {tag.name}.")
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+    def change_category(self, request, transactions, book):
+        """Změní kategorii vybraných transakcí."""
+        category_id = request.POST.get('bulk_category')
+        if not category_id:
+            messages.warning(request, "Nevybrali jste žádnou kategorii.")
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+        category = get_object_or_404(Category, id=category_id, book=book)  # Kategorie musí být z aktuální knihy
+        transactions.update(category=category)
+        messages.success(request, f"Kategorie změněna u {transactions.count()} transakcí na: {category.name}.")
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+    def delete_transactions(self, request, transactions):
+        """Smaže vybrané transakce."""
+        count = transactions.count()
+        transactions.delete()
+        messages.success(request, f"Smazáno {count} transakcí.")
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+    def export_transactions_to_csv(self, request, transactions):
+        """Exportuje vybrané transakce do CSV souboru."""
+        # Nastavení HTTP odpovědi pro CSV export
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="transactions_export.csv"'
+        response['Content-Disposition'] = 'attachment; filename="transactions.csv"'
 
         # Použití StringIO pro zápis do paměti
         output = StringIO()
-
-        # Vytvoření CSV writeru s obalením do UTF-8 pomocí TextIOWrapper
         writer = csv.writer(output)
-        # Zápis hlavičky do CSV
-        writer.writerow(['Datum', 'Kategorie', 'Částka', 'Tagy', 'Popis', 'Typ', 'Kniha'])
 
-        # Zápis dat do CSV
-        for transaction in queryset:
+        # Zápis hlavičky do CSV
+        writer.writerow(['ID', 'Datum', 'Kategorie', 'Částka', 'Tagy', 'Popis', 'Typ', 'Kniha'])
+
+        # Záznamy do CSV
+        for transaction in transactions:
             writer.writerow([
+                transaction.id,
                 transaction.datestamp,
                 transaction.category.name,
                 transaction.adjusted_amount,
@@ -670,4 +771,53 @@ class ExportTransactionsCSVView(LoginRequiredMixin, BookContextMixin, FilterView
 
         # Vrácení CSV výstupu ve správném kódování UTF-8
         response.write(output.getvalue().encode('utf-8-sig'))
+
         return response
+
+    def move_transactions_to_book(self, request, transactions):
+        """Přesune vybrané transakce do jiné knihy a zajistí vytvoření chybějících tagů a kategorií."""
+        new_book_id = request.POST.get('bulk_book')
+        if not new_book_id:
+            messages.warning(request, "Nevybrali jste cílovou knihu.")
+            return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+        # Kontrola, zda cílová kniha patří uživateli
+        new_book = get_object_or_404(Book, id=new_book_id, owner=request.user)
+
+        # Procházíme každou transakci a zpracováváme tagy a kategorie
+        for transaction in transactions:
+            # Tagy - Zkontrolujeme, zda tagy existují v nové knize, jinak je vytvoříme s kopiemi atributů
+            new_tags = []
+            for tag in transaction.tags.all():
+                # Zkontrolujeme, zda tag již existuje v nové knize
+                new_tag, created = Tag.objects.get_or_create(
+                    name=tag.name,
+                    book=new_book,
+                    defaults={'color': tag.color, 'description': tag.description}
+                )
+                new_tags.append(new_tag)  # Přidáme nový nebo existující tag do seznamu
+            """Pokud v nové knize existuje tag se stejným názvem, zachovává se barva a popisek tagu z nové knihy 
+            nikoli tagu z knihy původní."""
+
+            # Nastavíme transakci nové tagy z nové knihy
+            transaction.tags.set(new_tags)
+
+            # Kategorie - Zkontrolujeme, zda kategorie existuje v nové knize, jinak ji vytvoříme s kopiemi atributů
+            if transaction.category:
+                new_category, created = Category.objects.get_or_create(
+                    name=transaction.category.name,
+                    book=new_book,
+                    defaults={'color': transaction.category.color, 'description': transaction.category.description}
+                )
+                transaction.category = new_category  # Aktualizujeme kategorii na tu z nové knihy
+
+            # Případné označení transakce tagem "přesunuto"
+            moved_tag, created = Tag.objects.get_or_create(name="Přesunuto", book=new_book)
+            transaction.tags.add(moved_tag)
+
+            # Přesun transakce do nové knihy
+            transaction.book = new_book
+            transaction.save()
+
+        messages.success(request, f"{transactions.count()} vybrané/ých transakce/í byly přesunuty do knihy: {new_book.name}.")
+        return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})

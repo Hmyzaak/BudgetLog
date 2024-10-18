@@ -1,21 +1,20 @@
 import django_filters
-from django import forms
-
 from .forms import TransactionFilterForm
 from .models import *
 from budgetlog.templatetags.widgets import ColoredTagWidget
 
 
 class TransactionFilter(django_filters.FilterSet):
+    """Filtrovat transakce podle různých kritérií."""
+
     # Částka s rozsahem
-    amount_min = django_filters.NumberFilter(field_name='amount', lookup_expr='gte')
-    amount_max = django_filters.NumberFilter(field_name='amount', lookup_expr='lte')
+    amount_min = django_filters.NumberFilter(field_name='amount', lookup_expr='gte', label='Částka (od, včetně)')
+    amount_max = django_filters.NumberFilter(field_name='amount', lookup_expr='lte', label='Částka (do)')
 
     # Typ transakce (příjem/výdaj)
     type = django_filters.ChoiceFilter(
         choices=Transaction.TYPE_CHOICES,
         label='Typ transakce',
-        widget=forms.Select(attrs={'class': 'form-select'})
     )
 
     # Datum s rozsahem
@@ -23,28 +22,25 @@ class TransactionFilter(django_filters.FilterSet):
         field_name='datestamp',
         lookup_expr='gte',
         label='Datum (od)',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
     datestamp__lte = django_filters.DateFilter(
         field_name='datestamp',
         lookup_expr='lte',
         label='Datum (do)',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
 
     # Kategorie
     category = django_filters.ModelChoiceFilter(
         queryset=Category.objects.none(),  # Prázdný queryset, bude nastaven dynamicky
         label='Kategorie',
-        widget=forms.Select(attrs={'class': 'form-select'})
     )
 
     # Tagy
     tags = django_filters.ModelMultipleChoiceFilter(
         queryset=Tag.objects.all(),
-        widget=ColoredTagWidget,
         label='Tagy',
-        conjoined=True  # Pokud `False`, filtruje transakce, které mají alespoň jeden ze zadaných tagů
+        conjoined=True,  # Pokud `False`, filtruje transakce, které mají alespoň jeden ze zadaných tagů
+        widget=ColoredTagWidget  # Vlastní widget
     )
 
     # Popis transakce (fulltext)
@@ -52,7 +48,6 @@ class TransactionFilter(django_filters.FilterSet):
         field_name='description',
         lookup_expr='icontains',
         label='Popis obsahuje',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
     def __init__(self, *args, **kwargs):
