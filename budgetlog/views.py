@@ -340,6 +340,7 @@ class TransactionListView(LoginRequiredMixin, BookContextMixin, TransactionSumma
     def is_ajax(self):
         return self.request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
 
+
 class TransactionDetailView(LoginRequiredMixin, BookContextMixin, DeleteView):
     """Umožní uživateli náhled na veškeré informace o transakci."""
     model = Transaction

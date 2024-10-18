@@ -1,4 +1,5 @@
 import django_filters
+from django import forms
 from .forms import TransactionFilterForm
 from .models import *
 from budgetlog.templatetags.widgets import ColoredTagWidget
@@ -22,11 +23,13 @@ class TransactionFilter(django_filters.FilterSet):
         field_name='datestamp',
         lookup_expr='gte',
         label='Datum (od)',
+        widget=forms.DateInput(attrs={'type': 'date'}),
     )
     datestamp__lte = django_filters.DateFilter(
         field_name='datestamp',
         lookup_expr='lte',
         label='Datum (do)',
+        widget=forms.DateInput(attrs={'type': 'date'}),
     )
 
     # Kategorie
