@@ -41,4 +41,7 @@ urlpatterns = [
     path('setup-book/', views.SetupBookView.as_view(), name='setup-book'),
     path('login/', views.UserViewLogin.as_view(), name='login'),
     path('logout/', views.logout_user, name='logout'),
+    path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('profile/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
+    path('profile/delete/', views.DeleteAccountView.as_view(), name='delete-account'),
 ]

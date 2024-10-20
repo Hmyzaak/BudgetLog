@@ -13,7 +13,8 @@ from datetime import date
 from .filters import TransactionFilter
 from .forms import *
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth import login, logout, authenticate, get_user_model
 from django.contrib import messages
 import json
 import random
@@ -63,6 +64,36 @@ class UserViewLogin(CreateView):
                 login(request, user)
                 return redirect('book-list')
         return render(request, self.template_name, {"form": form, "title": "Přihlášení"})
+
+
+class ProfileView(LoginRequiredMixin, TemplateView):
+    """View pro zobrazení uživatelského profilu"""
+    template_name = 'budgetlog/profile.html'
+
+
+class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
+    """View pro změnu hesla"""
+    form_class = CustomPasswordChangeForm
+    template_name = 'budgetlog/change_password.html'
+    success_url = reverse_lazy('profile')  # Po úspěšné změně hesla se přesměruje na profil
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Heslo bylo úspěšně změněno.')
+        return super().form_valid(form)
+
+
+class DeleteAccountView(LoginRequiredMixin, DeleteView):
+    """View pro smazání uživatelského účtu"""
+    model = get_user_model()  # Django automaticky zvolí model uživatele
+    template_name = 'budgetlog/delete_account.html'
+    success_url = reverse_lazy('login')  # Po smazání přesměrujeme na přihlášení
+
+    def get_object(self, queryset=None):
+        return self.request.user  # Vrátí aktuálně přihlášeného uživatele
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Váš účet byl úspěšně smazán.')
+        return super().delete(request, *args, **kwargs)
 
 
 def logout_user(request):

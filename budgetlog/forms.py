@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from .models import *
 from budgetlog.templatetags.widgets import ColoredTagWidget
 
@@ -88,6 +88,24 @@ class UserRegistrationForm(UserCreationForm):
     class Meta:
         model = AppUser
         fields = ['email']  # Zobrazujeme jen email, hesla jsou již obsažena v UserCreationForm
+        labels = {
+            'email': 'E-mail',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Nastavení textů políček pro heslo
+        self.fields['password1'].label = "Nové heslo"
+        self.fields['password1'].help_text = (
+            "<ul>"
+            "<li>Heslo musí obsahovat alespoň 8 znaků.</li>"
+            "<li>Heslo nesmí obsahovat pouze číslice.</li>"
+            "<li>Heslo nesmí být příliš jednoduché.</li>"
+            "<li> Heslo nesmí být příliš podobné ostatním osobním informacím.</li>"
+            "</ul>"
+        )
+        self.fields['password2'].label = "Nové heslo pro potvrzení"
+        self.fields['password2'].help_text = "Zadejte nové heslo pro potvrzení."
 
     # Přidáme vlastní validaci hesla
     def clean(self):
@@ -107,3 +125,29 @@ class LoginForm(forms.Form):
 
     class Meta:
         fields = ["email", "password"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Nastavení textů políček pro email a heslo
+        self.fields['email'].label = "E-mail"
+        self.fields['password'].label = "Heslo"
+
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    """Formulář pro změnu hesla s přizpůsobenými českými texty."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Přizpůsobení českých textů v polích
+        self.fields['old_password'].label = "Staré heslo"
+        self.fields['new_password1'].label = "Nové heslo"
+        self.fields['new_password1'].help_text = (
+            "<ul>"
+            "<li>Heslo musí obsahovat alespoň 8 znaků.</li>"
+            "<li>Heslo nesmí obsahovat pouze číslice.</li>"
+            "<li>Heslo nesmí být příliš jednoduché.</li>"
+            "<li> Heslo nesmí být příliš podobné ostatním osobním informacím.</li>"
+            "</ul>"
+        )
+        self.fields['new_password2'].label = "Nové heslo pro potvrzení"
+        self.fields['new_password2'].help_text = "Zadejte nové heslo pro potvrzení."
