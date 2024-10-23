@@ -5,9 +5,10 @@
 <h1>Profil uživatele</h1>
 <p>Vítejte na svém profilu, {{ user.email }}</p>
 
-<div class="d-grid gap-2">
+<div class="d-grid gap-2 d-md-block">
     <a href="{% url 'change-password' %}" class="btn btn-primary">Změnit heslo</a>
     <a href="{% url 'delete-account' %}" class="btn btn-danger">Smazat účet</a>
+    <a href="{% url 'logout' %}" class="btn btn-warning">Logout</a>
 </div>
 
 {% endblock %}
