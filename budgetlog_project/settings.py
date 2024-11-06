@@ -63,7 +63,7 @@ ROOT_URLCONF = 'budgetlog_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -143,3 +143,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SITE_ID = 2
 
 AUTH_USER_MODEL = "budgetlog.AppUser"
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Pro testování lze použít místo "smtp" klíč "console", což použije pro generování emailu s odkazem konzoli
+"""Simple Mail Transfer Protocol: backend je v tomto případě nastaven na smtp.EmailBackend, což znamená, 
+že Django bude odesílat emaily přes externí SMTP server (např. Gmail SMTP)."""
+DEFAULT_FROM_EMAIL = 'noreply@budgetlog.cz'
+"""DEFAULT_FROM_EMAIL určuje výchozí adresu odesílatele, která se objeví ve všech emailech odesílaných aplikací, 
+pokud výslovně není určeno jinak. To znamená, že když bude aplikace odesílat emaily (např. potvrzení registrace 
+nebo reset hesla), uživatelé uvidí tuto adresu jako odesílatele."""
+
+EMAIL_HOST = 'smtp.gmail.com'
+"""EMAIL_HOST definuje adresu SMTP serveru, který bude použit pro odesílání emailů. Tento SMTP server musí být 
+poskytovatelem emailových služeb nebo serverem, který má schopnost odesílat emaily."""
+EMAIL_PORT = 587
+"""Port 587 je standardní port pro SMTP s podporou TLS (šifrovaná komunikace). Některé SMTP servery používají jiný 
+port, záleží na poskytovateli: Gmail a většina poskytovatelů používá port 587 pro SMTP s TLS."""
+EMAIL_USE_TLS = True
+"""Tato volba určuje, zda má být používáno TLS (Transport Layer Security) pro šifrování komunikace mezi vaší aplikací 
+a SMTP serverem."""
+
+EMAIL_HOST_USER = 'budgetlognoreply@gmail.com'
+"""EMAIL_HOST_USER je uživatelské jméno (většinou emailová adresa), které se používá k přihlášení k SMTP serveru. 
+Toto je emailová adresa, z níž se budou odesílat emaily."""
+EMAIL_HOST_PASSWORD = 'nndvhfglfgdmogyl'  # Zde vložte 16místné heslo aplikace
+"""Hesla aplikací umožňují přihlásit se k účtu Google ve starších aplikacích a službách, které nepodporují moderní 
+bezpečnostní standardy."""

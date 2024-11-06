@@ -1,24 +1,44 @@
-from django.db.models import Sum, DecimalField, Q, F, Case, When, Max, Min, Avg, Value, Count
-from django.db.models.functions import Coalesce
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views import View
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
-from django.urls import reverse, reverse_lazy
-from django_filters.views import FilterView
-from django.utils.dateformat import format
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, QueryDict
-from decimal import Decimal
-from datetime import date
-from .filters import TransactionFilter
-from .forms import *
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth import login, logout, authenticate
-from django.contrib import messages
+# Standardní knihovny Pythonu
+import csv
 import json
 import random
-import csv
+from datetime import date
+from decimal import Decimal
 from io import StringIO, TextIOWrapper
+
+# Django importy
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login, logout, authenticate, get_user_model
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.views import PasswordResetView, PasswordChangeView, PasswordResetConfirmView
+from django.core.mail import EmailMultiAlternatives
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models import (
+    Sum, DecimalField, Q, F, Case, When, Max, Min, Avg, Value, Count
+)
+from django.db.models.functions import Coalesce
+from django.http import (
+    HttpResponse, HttpResponseForbidden, JsonResponse, QueryDict, HttpResponseRedirect
+)
+from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
+from django.urls import reverse, reverse_lazy
+from django.utils.dateformat import format
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.views import View
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
+
+# Třetí strany
+from django_filters.views import FilterView
+
+# Lokální aplikace
+from budgetlog.models import AppUser
+from .filters import TransactionFilter
+from .forms import *
 
 
 # Create your views here.
@@ -63,6 +83,86 @@ class UserViewLogin(CreateView):
                 login(request, user)
                 return redirect('book-list')
         return render(request, self.template_name, {"form": form, "title": "Přihlášení"})
+
+
+class ProfileView(LoginRequiredMixin, TemplateView):
+    """View pro zobrazení uživatelského profilu"""
+    template_name = 'budgetlog/profile.html'
+
+
+class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
+    """View pro změnu hesla"""
+    form_class = CustomPasswordChangeForm
+    template_name = 'budgetlog/change_password.html'
+    success_url = reverse_lazy('profile')  # Po úspěšné změně hesla se přesměruje na profil
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Heslo bylo úspěšně změněno.')
+        return super().form_valid(form)
+
+
+class DeleteAccountView(LoginRequiredMixin, DeleteView):
+    """View pro smazání uživatelského účtu"""
+    model = get_user_model()  # Django automaticky zvolí model uživatele
+    template_name = 'budgetlog/delete_account.html'
+    success_url = reverse_lazy('login')  # Po smazání přesměrujeme na přihlášení
+
+    def get_object(self, queryset=None):
+        return self.request.user  # Vrátí aktuálně přihlášeného uživatele
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Váš účet byl úspěšně smazán.')
+        return super().delete(request, *args, **kwargs)
+
+
+class CustomPasswordResetView(PasswordResetView):
+    form_class = PasswordResetForm
+    email_template_name = 'registration/password_reset_email.txt'  # Textová verze
+    html_email_template_name = 'registration/password_reset_email.html'  # HTML verze
+    subject_template_name = 'registration/password_reset_subject.txt'  # Předmět v emailu
+    success_url = reverse_lazy('password_reset_done')  # Úspěšné přesměrování
+
+    def form_valid(self, form):
+        """
+        Po validaci formuláře odešle email ve formátu HTML pomocí `EmailMultiAlternatives`.
+        """
+        user_email = form.cleaned_data['email']
+        users = AppUser.objects.filter(email=user_email)
+
+        for user in users:
+            # Nastavení kontextu
+            context = {
+                'email': user.email,
+                'domain': self.request.META['HTTP_HOST'],
+                'site_name': 'BudgetLog',
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'user': user,
+                'token': default_token_generator.make_token(user),
+                'protocol': 'https' if self.request.is_secure() else 'http',
+            }
+
+            # Generování předmětu, textové a HTML verze zprávy
+            subject = render_to_string(self.subject_template_name, context).strip()
+            text_content = render_to_string(self.email_template_name, context)
+            html_content = render_to_string(self.html_email_template_name, context)
+
+            # Nastavení emailu s více alternativami
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content,  # Textová verze jako hlavní tělo
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[user.email]
+            )
+            email.attach_alternative(html_content, "text/html")  # Připojení HTML verze
+            email.send()
+
+        # Vrácení vlastní odpovědi pro přesměrování po úspěšném odeslání e-mailu
+        return HttpResponseRedirect(self.success_url)
+
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    form_class = CustomPasswordResetForm  # Vlastní formulář s českými popisky
+    success_url = reverse_lazy('password_reset_complete')  # Kam se přesměruje po úspěšném resetu
 
 
 def logout_user(request):
@@ -390,15 +490,27 @@ class TagListView(ObjectListView):
 class ObjectFormView(LoginRequiredMixin, BookContextMixin):
     template_name = 'budgetlog/object_form.html'
 
-    def get_success_url(self):
-        """Vrátí URL na seznam objektů po úspěšném smazání."""
+    def get_success_url_with_filters(self):
+        """Vrátí URL na seznam objektů s uloženými filtry."""
         model_name = self.model.__name__.lower()
-        return reverse_lazy(f'{model_name}-list')
+        base_url = reverse_lazy(f'{model_name}-list')
+
+        # Získáme filtry z requestu (pokud nějaké existují)
+        query_params = self.request.GET.copy()
+        query_params.pop('csrfmiddlewaretoken', None)
+
+        if query_params:
+            return f"{base_url}?{query_params.urlencode()}"
+        return base_url
+
+    def get_success_url(self):
+        """Vrátí URL na seznam objektů po úspěšné akci s filtry."""
+        return self.get_success_url_with_filters()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['object_singular_akluzativ'] = self.model.object_singular_akluzativ
-        context['list_url_name'] = f'{self.model._meta.model_name}-list'
+        context['list_url_name'] = self.get_success_url_with_filters()  # Přidáme uložené filtry do URL
         return context
 
     def dispatch(self, request, *args, **kwargs):
@@ -454,15 +566,29 @@ class TagUpdateView(ObjectFormView, UpdateView):
 class GenericDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'budgetlog/object_confirm_delete.html'
 
-    def get_success_url(self):
-        """Vrátí URL na seznam objektů po úspěšném smazání."""
+    def get_success_url_with_filters(self):
+        """Vrátí URL na seznam objektů s uloženými filtry."""
         model_name = self.model.__name__.lower()
-        return reverse_lazy(f'{model_name}-list')
+        base_url = reverse_lazy(f'{model_name}-list')
+
+        # Získání pouze GET parametrů (např. z URL)
+        query_params = self.request.GET.copy()
+
+        # Odebereme CSRF token a další nevhodné parametry
+        query_params.pop('csrfmiddlewaretoken', None)
+
+        if query_params:
+            return f"{base_url}?{query_params.urlencode()}"
+        return base_url
+
+    def get_success_url(self):
+        """Vrátí URL na seznam objektů po úspěšné akci s filtry."""
+        return self.get_success_url_with_filters()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['object_singular_akluzativ'] = self.model.object_singular_akluzativ
-        context['list_url_name'] = f'{self.model._meta.model_name}-list'
+        context['list_url_name'] = self.get_success_url_with_filters()  # Přidáme uložené filtry do URL
         return context
 
 
@@ -507,7 +633,7 @@ class MonthDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMi
 
     def get_context_data(self, year, month, **kwargs):
         context = super().get_context_data(**kwargs)
-        transactions = self.get_transactions(year=year, month=month)
+        transactions = Transaction.objects.filter(book=self.get_current_book(), datestamp__year=year, datestamp__month=month)
         total_income, total_expense, total_balance = self.calculate_totals(transactions)
         category_summaries = self.get_category_summaries(transactions, year=year, month=month)
 
@@ -529,7 +655,7 @@ class YearDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMix
 
     def get_context_data(self, year, **kwargs):
         context = super().get_context_data(**kwargs)
-        transactions = self.get_transactions(year=year)
+        transactions = Transaction.objects.filter(book=self.get_current_book(), datestamp__year=year)
         total_income, total_expense, total_balance = self.calculate_totals(transactions)
         months, category_summaries, monthly_balances = self.get_yearly_category_summaries(year)
 
@@ -566,7 +692,7 @@ class YearDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMix
     def get_yearly_category_summaries(self, year):
         """Získá souhrny kategorií a měsíční bilance pro daný rok."""
         current_book = self.get_current_book()
-        transactions = self.get_transactions(year=year)
+        transactions = Transaction.objects.filter(book=self.get_current_book(), datestamp__year=year)
 
         # Pokud se zpracovává aktuální rok, použijeme aktuální měsíc jako počet měsíců, jinak hodnotu 12
         month_count = date.today().month if year == date.today().year else 12
@@ -632,7 +758,7 @@ class DashboardView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixi
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        transactions = self.get_transactions()
+        transactions = Transaction.objects.filter(book=self.get_current_book())
         months_years = transactions.dates('datestamp', 'month', order='DESC')
         years = transactions.dates('datestamp', 'year', order='DESC')
 

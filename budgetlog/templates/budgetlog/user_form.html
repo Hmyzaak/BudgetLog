@@ -19,6 +19,7 @@
                     {% elif title == "Registrace" %}
                         <a href="{% url 'login' %}" class="btn btn-danger">Již mám účet</a>
                     {% endif %}
+                <a href="{% url 'password_reset' %}" class="btn btn-warning">Reset hesla</a>
             </div>
         </form>
     </section>

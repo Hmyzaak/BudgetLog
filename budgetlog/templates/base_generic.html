@@ -67,6 +67,9 @@
                             <a class="nav-link" href="{% url 'book-list' %}">Knihy</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="{% url 'profile' %}">Profil</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="{% url 'logout' %}">Logout</a>
                         </li>
                     </ul>
@@ -109,33 +112,15 @@
         </div>
     </footer>
 
+    <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  <!-- Pro vykreslení grafů -->
-    <!-- Bootstrap JS -->
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/clickable_rows.js' %}"></script>
     <script src="{% static 'js/hamburger_menu.js' %}"></script>
-    <script src="{% static 'js/nouislider.min.js' %}"></script>
-    <script src="{% static 'js/custom_slider.js' %}"></script>
-    <script src="{% static 'js/filter-toggle.js' %}"></script>
-    {% block extra_js %}
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasFilters = urlParams.toString().includes('amount_min') ||
-                           urlParams.toString().includes('amount_max') ||
-                           urlParams.toString().includes('type') ||
-                           urlParams.toString().includes('datestamp__gte') ||
-                           urlParams.toString().includes('datestamp__lte') ||
-                           urlParams.toString().includes('category') ||
-                           urlParams.toString().includes('tags') ||
-                           urlParams.toString().includes('description');
+    <script src="{% static 'js/clear_selected_transactions.js' %}"></script>
 
-        if (!hasFilters) {
-            localStorage.removeItem('filter-visible'); // Čistíme stav filtru, pokud nejsou aplikovány žádné filtry
-        }
-    });
-    </script>
+    {% block extra_js %}
     {% endblock %}
 </body>
 </html>

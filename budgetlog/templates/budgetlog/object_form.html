@@ -13,7 +13,7 @@
     {{ form|crispy }}
     <div class="d-grid gap-2 d-md-block">
         <button type="submit" class="btn btn-primary">Uložit</button>
-        <a href="{% url list_url_name %}" class="btn btn-secondary">Zpět na seznam</a>
+        <a href="{{ list_url_name }}" class="btn btn-secondary">Zpět na seznam</a>
     </div>
 </form>
 {% endblock %}

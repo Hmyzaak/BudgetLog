@@ -1,3 +1,4 @@
+from django.contrib.auth import views as auth_views
 from django.urls import path
 from . import url_handlers
 from . import views
@@ -41,4 +42,16 @@ urlpatterns = [
     path('setup-book/', views.SetupBookView.as_view(), name='setup-book'),
     path('login/', views.UserViewLogin.as_view(), name='login'),
     path('logout/', views.logout_user, name='logout'),
+    path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('profile/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
+    path('profile/delete/', views.DeleteAccountView.as_view(), name='delete-account'),
+    # URL pro reset hesla
+    path('password-reset/', views.CustomPasswordResetView.as_view(template_name='registration/password_reset_form.html'),
+         name='password_reset'),
+    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'),
+         name='password_reset_done'),
+    path('reset/<uidb64>/<token>/',views.CustomPasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'),
+         name='password_reset_confirm'),
+    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'),
+         name='password_reset_complete'),
 ]

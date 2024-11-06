@@ -5,14 +5,19 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
 # Create your models here.
 class UserManager(BaseUserManager):
-    """Vytvoří uživatele a admina."""
-    def create_user(self, email, password):
-        print(self.model)
-        if email and password:
-            user = self.model(email=self.normalize_email(email))
-            user.set_password(password)
-            user.save()
-            return user
+    """Správa uživatelů a administrátorů."""
+
+    def create_user(self, email, password=None):
+        """Vytvoří a uloží uživatele s daným emailem a heslem."""
+        if not email:
+            raise ValueError("E-mail musí být zadán.")
+        if not password:
+            raise ValueError("Heslo musí být zadáno.")
+
+        user = self.model(email=self.normalize_email(email))
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
 
     def create_superuser(self, email, password):
         user = self.create_user(email, password)
@@ -25,6 +30,7 @@ class AppUser(AbstractBaseUser):
     """Model reprezentující uživatele."""
     email = models.EmailField(max_length=300, unique=True)
     is_admin = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Uživatel"
