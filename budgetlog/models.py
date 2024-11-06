@@ -1,3 +1,4 @@
+# Django importy
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
@@ -8,7 +9,7 @@ class UserManager(BaseUserManager):
     """Správa uživatelů a administrátorů."""
 
     def create_user(self, email, password=None):
-        """Vytvoří a uloží uživatele s daným emailem a heslem."""
+        """Vytvoří a uloží uživatele s daným e-mailem a heslem."""
         if not email:
             raise ValueError("E-mail musí být zadán.")
         if not password:
@@ -20,15 +21,17 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password):
+        """Vytvoří a uloří superuživatele s daným e-maliem a heslem."""
         user = self.create_user(email, password)
         user.is_admin = True
-        user.save()
+        user.save(using=self._db)
         return user
 
 
 class AppUser(AbstractBaseUser):
     """Model reprezentující uživatele."""
-    email = models.EmailField(max_length=300, unique=True)
+
+    email = models.EmailField(max_length=100, unique=True)
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
@@ -42,27 +45,24 @@ class AppUser(AbstractBaseUser):
 
     def __str__(self):
         """Textová reprezentace uživatele jako jeho mailu."""
-        return "email: {}".format(self.email)
+        return f"email: {self.email}"
 
     @property
     def is_staff(self):
-        """Vrací, zda je uživatel admin."""
+        """Vrací True, pokud je uživatel administrátor."""
         return self.is_admin
 
     def has_perm(self, perm, obj=None):
-        """Vrací, zda má uživatel povolení, pro neaktivní uživatele vrací False."""
-        return True
+        """Vrací True, pokud má uživatel povolení (= je aktivován)."""
+        return self.is_active
 
     def has_module_perms(self, app_label):
         """Vrací True, pokud má uživatel povolení pro daný modul."""
-        return True
+        return self.is_active
 
 
 class Book(models.Model):
     """Model reprezentující knihu záznamů pro uživatele."""
-
-    object_plural_genitiv = "knih"
-    object_singular_akluzativ = "knihu"
 
     name = models.CharField(max_length=100, verbose_name="Jméno knihy", help_text="Uveďte jméno knihy")
     description = models.TextField(null=True, blank=True, verbose_name="Popis knihy",
@@ -73,22 +73,20 @@ class Book(models.Model):
     class Meta:
         verbose_name = "Kniha"
         verbose_name_plural = "Knihy"
-        unique_together = ('name', 'owner')
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'owner'], name='unique_book_name_owner')
+        ]
+
+    object_plural_genitiv = "knih"
+    object_singular_akluzativ = "knihu"
 
     def __str__(self):
-        """Textová reprezentace modelu Book"""
+        """Textová reprezentace modelu Book."""
         return f"{self.name} (Majitel: {self.owner.email})"
 
 
 class Category(models.Model):
     """Model pro kategorizaci transakcí."""
-    class Meta:
-        verbose_name = "Kategorie"
-        verbose_name_plural = "Kategorie"
-        unique_together = ('name', 'book')
-
-    object_plural_genitiv = "kategorií"
-    object_singular_akluzativ = "kategorii"
 
     name = models.CharField(max_length=200, verbose_name="Název",
                             help_text="Uveď název kategorie pro transakce (např. potraviny, doprava, zábava)")
@@ -100,6 +98,16 @@ class Category(models.Model):
                              help_text="Vyberte knihu, ke které patří tato kategorie")
     is_default = models.BooleanField(default=False)  # Přidání příznaku pro výchozí kategorii, hodnota True umožní nesmazatelnost
 
+    class Meta:
+        verbose_name = "Kategorie"
+        verbose_name_plural = "Kategorie"
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'book'], name='unique_category_name_book')
+        ]
+
+    object_plural_genitiv = "kategorií"
+    object_singular_akluzativ = "kategorii"
+
     def __str__(self):
         """Textová reprezentace modelu Category."""
         return self.name
@@ -108,19 +116,21 @@ class Category(models.Model):
 class Tag(models.Model):
     """Model reprezentující tag, který může být přiřazen k více transakcím."""
 
-    class Meta:
-        verbose_name = "Tag"
-        verbose_name_plural = "Tagy"
-        unique_together = ('name', 'book')  # Tag musí být jedinečný v rámci knihy
-
     name = models.CharField(max_length=25, verbose_name="Název tagu",
                             help_text="Uveď název tagu.")
     color = models.CharField(max_length=7, default='#000000', verbose_name="Barva tagu",
-                             help_text="Barva tagu")
+                             help_text="Barva tagu.")
     description = models.TextField(null=True, blank=True, verbose_name="Popis tagu",
                                    help_text="Popis tagu (volitelný).")
     book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha",
                              help_text="Vyberte knihu, ke které patří tento tag")
+
+    class Meta:
+        verbose_name = "Tag"
+        verbose_name_plural = "Tagy"
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'book'], name='unique_tag_name_book')
+        ]
 
     object_plural_genitiv = "tagů"
     object_singular_akluzativ = "tag"
@@ -131,12 +141,6 @@ class Tag(models.Model):
 
 class Transaction(models.Model):
     """Model reprezentující záznam o finanční transakci."""
-    class Meta:
-        verbose_name = "Transakce"
-        verbose_name_plural = "Transakce"
-
-    object_plural_genitiv = "transakcí"
-    object_singular_akluzativ = "transakci"
 
     TYPE_CHOICES = (
         ('income', 'Příjem'),
@@ -146,13 +150,11 @@ class Transaction(models.Model):
 
     book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha",
                              help_text="Vyberte knihu, ke které patří tato transakce")
-
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Částka",
                                  help_text="Uveďte částku transakce v [CZK].")
     category = models.ForeignKey(Category, null=True, on_delete=models.SET_NULL, verbose_name="Kategorie",
-                                 help_text="Vyberte kategorii pro tuto transakci.")
-    """on_delete=models.SET_NULL nastaví hodnotu na NULL při smazání související kategorie, což zajistí, 
-    že transakce nebude smazána."""
+                                 help_text="Vyberte kategorii pro tuto transakci.")  # on_delete=models.SET_NULL
+    # nastaví hodnotu na NULL při smazání související kategorie, což zajistí, že transakce nebude smazána.
     datestamp = models.DateField(default=timezone.now, verbose_name="Datum",
                                  help_text="Datum provedení transakce.")
     tags = models.ManyToManyField(Tag, blank=True, verbose_name="Tagy",
@@ -161,6 +163,13 @@ class Transaction(models.Model):
                                    help_text="Zadejte detailnější popis transakce (volitelný).")
     type = models.CharField(max_length=7, choices=TYPE_CHOICES, default='expense', verbose_name="Typ",
                             help_text="Zvolte, zda je tato transakce výdaj nebo příjem.")
+
+    class Meta:
+        verbose_name = "Transakce"
+        verbose_name_plural = "Transakce"
+
+    object_plural_genitiv = "transakcí"
+    object_singular_akluzativ = "transakci"
 
     def display_tags(self, transaction):
         return ', '.join(tag.name for tag in transaction.tags.all())

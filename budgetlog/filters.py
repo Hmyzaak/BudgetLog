@@ -1,5 +1,10 @@
-import django_filters
+# Django importy
 from django import forms
+
+# Třetí strany
+import django_filters
+
+# Lokální aplikace
 from .forms import TransactionFilterForm
 from .models import *
 from budgetlog.templatetags.widgets import ColoredTagWidget

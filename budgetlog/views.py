@@ -36,7 +36,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, T
 from django_filters.views import FilterView
 
 # Lokální aplikace
-from budgetlog.models import AppUser
+from budgetlog.models import AppUser, Book
 from .filters import TransactionFilter
 from .forms import *
 
