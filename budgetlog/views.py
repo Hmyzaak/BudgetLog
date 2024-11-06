@@ -1,25 +1,44 @@
-from django.db.models import Sum, DecimalField, Q, F, Case, When, Max, Min, Avg, Value, Count
-from django.db.models.functions import Coalesce
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views import View
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
-from django.urls import reverse, reverse_lazy
-from django_filters.views import FilterView
-from django.utils.dateformat import format
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, QueryDict
-from decimal import Decimal
-from datetime import date
-from .filters import TransactionFilter
-from .forms import *
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import PasswordChangeView
-from django.contrib.auth import login, logout, authenticate, get_user_model
-from django.contrib import messages
+# Standardní knihovny Pythonu
+import csv
 import json
 import random
-import csv
+from datetime import date
+from decimal import Decimal
 from io import StringIO, TextIOWrapper
+
+# Django importy
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login, logout, authenticate, get_user_model
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.views import PasswordResetView, PasswordChangeView, PasswordResetConfirmView
+from django.core.mail import EmailMultiAlternatives
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models import (
+    Sum, DecimalField, Q, F, Case, When, Max, Min, Avg, Value, Count
+)
+from django.db.models.functions import Coalesce
+from django.http import (
+    HttpResponse, HttpResponseForbidden, JsonResponse, QueryDict, HttpResponseRedirect
+)
+from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
+from django.urls import reverse, reverse_lazy
+from django.utils.dateformat import format
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.views import View
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
+
+# Třetí strany
+from django_filters.views import FilterView
+
+# Lokální aplikace
+from budgetlog.models import AppUser
+from .filters import TransactionFilter
+from .forms import *
 
 
 # Create your views here.
@@ -94,6 +113,56 @@ class DeleteAccountView(LoginRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         messages.success(request, 'Váš účet byl úspěšně smazán.')
         return super().delete(request, *args, **kwargs)
+
+
+class CustomPasswordResetView(PasswordResetView):
+    form_class = PasswordResetForm
+    email_template_name = 'registration/password_reset_email.txt'  # Textová verze
+    html_email_template_name = 'registration/password_reset_email.html'  # HTML verze
+    subject_template_name = 'registration/password_reset_subject.txt'  # Předmět v emailu
+    success_url = reverse_lazy('password_reset_done')  # Úspěšné přesměrování
+
+    def form_valid(self, form):
+        """
+        Po validaci formuláře odešle email ve formátu HTML pomocí `EmailMultiAlternatives`.
+        """
+        user_email = form.cleaned_data['email']
+        users = AppUser.objects.filter(email=user_email)
+
+        for user in users:
+            # Nastavení kontextu
+            context = {
+                'email': user.email,
+                'domain': self.request.META['HTTP_HOST'],
+                'site_name': 'BudgetLog',
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'user': user,
+                'token': default_token_generator.make_token(user),
+                'protocol': 'https' if self.request.is_secure() else 'http',
+            }
+
+            # Generování předmětu, textové a HTML verze zprávy
+            subject = render_to_string(self.subject_template_name, context).strip()
+            text_content = render_to_string(self.email_template_name, context)
+            html_content = render_to_string(self.html_email_template_name, context)
+
+            # Nastavení emailu s více alternativami
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content,  # Textová verze jako hlavní tělo
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[user.email]
+            )
+            email.attach_alternative(html_content, "text/html")  # Připojení HTML verze
+            email.send()
+
+        # Vrácení vlastní odpovědi pro přesměrování po úspěšném odeslání e-mailu
+        return HttpResponseRedirect(self.success_url)
+
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    form_class = CustomPasswordResetForm  # Vlastní formulář s českými popisky
+    success_url = reverse_lazy('password_reset_complete')  # Kam se přesměruje po úspěšném resetu
 
 
 def logout_user(request):

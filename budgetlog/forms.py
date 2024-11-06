@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm, SetPasswordForm
 from .models import *
 from budgetlog.templatetags.widgets import ColoredTagWidget
 
@@ -140,6 +140,25 @@ class CustomPasswordChangeForm(PasswordChangeForm):
         super().__init__(*args, **kwargs)
         # Přizpůsobení českých textů v polích
         self.fields['old_password'].label = "Staré heslo"
+        self.fields['new_password1'].label = "Nové heslo"
+        self.fields['new_password1'].help_text = (
+            "<ul>"
+            "<li>Heslo musí obsahovat alespoň 8 znaků.</li>"
+            "<li>Heslo nesmí obsahovat pouze číslice.</li>"
+            "<li>Heslo nesmí být příliš jednoduché.</li>"
+            "<li> Heslo nesmí být příliš podobné ostatním osobním informacím.</li>"
+            "</ul>"
+        )
+        self.fields['new_password2'].label = "Nové heslo pro potvrzení"
+        self.fields['new_password2'].help_text = "Zadejte nové heslo pro potvrzení."
+
+
+class CustomPasswordResetForm(SetPasswordForm):
+    """Formulář pro reset hesla s přizpůsobenými českými texty."""
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(user, *args, **kwargs)
+        # Přizpůsobení českých textů v polích
         self.fields['new_password1'].label = "Nové heslo"
         self.fields['new_password1'].help_text = (
             "<ul>"
