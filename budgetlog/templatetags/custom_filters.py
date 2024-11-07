@@ -16,6 +16,6 @@ def format_month_cs(month):
 
 
 @register.filter
-def instanceof(obj, class_obj):
-    """Vrátí True, pokud je objekt instance dané třídy nebo jejích podtříd."""
-    return isinstance(obj, class_obj)
+def instanceof(object, class_name):
+    """Vrátí True, pokud je object instance dané třídy"""
+    return object.__class__.__name__ == class_name
