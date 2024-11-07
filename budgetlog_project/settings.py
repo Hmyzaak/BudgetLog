@@ -165,6 +165,6 @@ a SMTP serverem."""
 EMAIL_HOST_USER = 'budgetlognoreply@gmail.com'
 """EMAIL_HOST_USER je uživatelské jméno (většinou emailová adresa), které se používá k přihlášení k SMTP serveru. 
 Toto je emailová adresa, z níž se budou odesílat emaily."""
-EMAIL_HOST_PASSWORD = 'nndvhfglfgdmogyl'  # Zde vložte 16místné heslo aplikace
+EMAIL_HOST_PASSWORD = 'xxxxxxxxxxxxxxxx'  # Zde vložte 16místné heslo aplikace
 """Hesla aplikací umožňují přihlásit se k účtu Google ve starších aplikacích a službách, které nepodporují moderní 
 bezpečnostní standardy."""

@@ -4,11 +4,6 @@ from django import forms
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-# superadmin; superadmin@budgetlog.cz; heslojeveslo
-
-# admin@budgetlog.cz; ???
-# demo@budgetlog.cz; demoheslo
-
 
 class UserCreationForm(forms.ModelForm):
     password = forms.CharField(label="Password", widget=forms.PasswordInput)
