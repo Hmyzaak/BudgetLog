@@ -29,10 +29,8 @@ from django.urls import reverse, reverse_lazy
 from django.utils.dateformat import format
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
-from django.views.generic.edit import FormView
 
 # Třetí strany
 from django_filters.views import FilterView
