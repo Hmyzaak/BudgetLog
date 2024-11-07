@@ -41,7 +41,6 @@ from .filters import TransactionFilter
 from .forms import *
 
 
-# Create your views here.
 def index_handler(request):
     return redirect("login")
 # Přesměrování z localhost:8000/ na localhost:8000/login/
