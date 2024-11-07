@@ -6,4 +6,5 @@ class BudgetlogConfig(AppConfig):
     name = 'budgetlog'
 
     def ready(self):
-        import budgetlog.signals  # Registrace signálů
+        # Import signálů pro registraci při spuštění aplikace
+        import budgetlog.signals

@@ -23,14 +23,16 @@ from django.db.models.functions import Coalesce
 from django.http import (
     HttpResponse, HttpResponseForbidden, JsonResponse, QueryDict, HttpResponseRedirect
 )
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils.dateformat import format
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
+from django.views.generic.edit import FormView
 
 # Třetí strany
 from django_filters.views import FilterView
@@ -42,7 +44,11 @@ from .forms import *
 
 
 # Create your views here.
-# Všechny třídy dědí z generických View podle toho, co s daným modelem mají dělat.
+def index_handler(request):
+    return redirect("login")
+# Přesměrování z localhost:8000/ na localhost:8000/login/
+
+
 class UserViewRegister(CreateView):
     form_class = UserRegistrationForm
     model = AppUser
