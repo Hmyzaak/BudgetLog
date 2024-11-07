@@ -61,8 +61,12 @@ document.getElementById('export-csv-btn').addEventListener('click', function() {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     formData.set('action', 'export_csv');  // Specifikujeme, že jde o export CSV
 
+    // Získejte správnou URL pro bulk akci
+    // const bulkTransactionActionUrl = "{% url 'bulk-transaction-action' %}";
+    // console.log('URL pro odeslání požadavku:', bulkTransactionActionUrl);  // Logování URL pro kontrolu
+
     // Poslání přes AJAX
-    fetch("{% url 'bulk-transaction-action' %}", {
+    fetch(bulkTransactionActionUrl, {
         method: 'POST',
         body: formData,
         headers: {
@@ -70,6 +74,7 @@ document.getElementById('export-csv-btn').addEventListener('click', function() {
         },
     })
     .then(response => {
+        console.log('Status k odpovědi:', response.status);  // Logování statusu odpovědi
         if (response.headers.get('content-type').includes('application/json')) {
             return response.json();  // Očekáváme JSON odpověď (přesměrování)
         } else {

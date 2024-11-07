@@ -826,6 +826,7 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
         else:
             messages.error(request, "Neplatná akce.")
             return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+        print(f"Získaná akce: {action}")
 
     def assign_tag(self, request, transactions, book):
         """Přiřadí tag vybraným transakcím."""
@@ -901,6 +902,7 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
         # Vrácení CSV výstupu ve správném kódování UTF-8
         response.write(output.getvalue().encode('utf-8-sig'))
+        print("Provedena celá akce ve views.")
 
         return response
 

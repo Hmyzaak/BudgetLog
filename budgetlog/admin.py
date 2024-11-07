@@ -77,7 +77,7 @@ class TransactionAdmin(admin.ModelAdmin):
     """
     Admin konfigurace pro model Transaction s možností zobrazení všech atributů a filtrování podle zadaných parametrů.
     """
-    list_display = ('amount', 'category', 'datestamp', 'display_tags', 'description', 'type', 'book')
+    list_display = ('amount', 'category', 'datestamp', 'description', 'type', 'book')
     list_filter = ('type', 'category', 'datestamp', 'book')
     search_fields = ('description', 'category__name', 'type')
 
