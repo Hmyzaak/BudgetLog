@@ -39,18 +39,13 @@ class UserChangeForm(forms.ModelForm):
         model = AppUser
         fields = ["email", "is_admin"]
 
-    def __init__(self, *args, **kwargs):
-        super(UserChangeForm, self).__init__(*args, **kwargs)
-        self.Meta.fields.remove("password")
-        # Odebíráme políčko pro změnu hesla
-
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
     """
     Admin konfigurace pro model Book, která zobrazuje sloupce 'name' a 'description' a podporuje základní hledání.
     """
-    list_display = ('name', 'description', 'owner')
+    list_display = ('name', 'description', 'owner', 'id')
     search_fields = ('name', 'description')
 
 
@@ -59,7 +54,7 @@ class TagAdmin(admin.ModelAdmin):
     """
     Admin konfigurace pro model Tag, který zobrazuje sloupce 'name', 'color', 'description' a 'book'.
     """
-    list_display = ('name', 'color', 'description', 'book')
+    list_display = ('name', 'color', 'description', 'id', 'book')
     search_fields = ('name', 'description')
 
 
@@ -68,7 +63,7 @@ class CategoryAdmin(admin.ModelAdmin):
     """
     Admin konfigurace pro model Category, která zobrazuje sloupce 'name', 'color', 'description' a 'book'.
     """
-    list_display = ('name', 'color', 'description', 'book')
+    list_display = ('name', 'color', 'description', 'id', 'book')
     search_fields = ('name', 'description')
 
 
@@ -77,7 +72,7 @@ class TransactionAdmin(admin.ModelAdmin):
     """
     Admin konfigurace pro model Transaction s možností zobrazení všech atributů a filtrování podle zadaných parametrů.
     """
-    list_display = ('amount', 'category', 'datestamp', 'description', 'type', 'book')
+    list_display = ('amount', 'category', 'datestamp', 'id', 'description', 'type', 'book')
     list_filter = ('type', 'category', 'datestamp', 'book')
     search_fields = ('description', 'category__name', 'type')
 
@@ -89,7 +84,7 @@ class AppUserAdmin(UserAdmin):
     """
     form = UserChangeForm
     add_form = UserCreationForm
-    list_display = ["email", "is_admin"]
+    list_display = ["email", "id", "is_admin"]
     list_filter = ["is_admin"]
     ordering = ["email"]
     search_fields = ["email"]
