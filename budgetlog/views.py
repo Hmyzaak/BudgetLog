@@ -178,7 +178,12 @@ def logout_user(request):
 
 class SetupBookView(LoginRequiredMixin, CreateView):
     template_name = 'budgetlog/setup_book.html'
-    context_object_name = 'setup-book'
+
+    @staticmethod
+    def create_category(category_name, book):
+        """Pomocná metoda pro vytvoření kategorie s náhodnou barvou."""
+        color = "#{:06x}".format(random.randint(0, 0xFFFFFF))
+        Category.objects.create(name=category_name.strip(), color=color, book=book)
 
     def get(self, request):
         # Navrhneme defaultní kategorie
@@ -253,15 +258,17 @@ class BookUpdateView(LoginRequiredMixin, UpdateView):
 class BookContextMixin:
     """Mixin, který poskytne aktuální knihu uživatele v pohledech."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.current_book = None
+
     def get_current_book(self):
-        """Vrátí aktuální knihu uživatele na základě session nebo výběru."""
-        current_book_id = self.request.session.get('current_book_id', None)
-        if current_book_id:
-            try:
-                return Book.objects.get(id=current_book_id, owner=self.request.user)
-            except Book.DoesNotExist:
-                return None
-        return None
+        """Vrátí aktuální knihu uživatele, pokud není v instanci, načte ji z databáze."""
+        if not self.current_book:
+            current_book_id = self.request.session.get('current_book_id')
+            if current_book_id:
+                self.current_book = Book.objects.filter(id=current_book_id, owner=self.request.user).first()
+        return self.current_book
 
     def form_valid(self, form):
         # Jen pokud form existuje a má instanci (Create/Update)
@@ -271,18 +278,17 @@ class BookContextMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['all_books'] = Book.objects.filter(owner=self.request.user)
-        context['current_book'] = self.get_current_book()
+        current_book = self.get_current_book()
+        context.update({
+            'all_books': Book.objects.filter(owner=self.request.user),
+            'current_book': current_book
+        })
         return context
 
     def get_queryset(self):
         queryset = super().get_queryset()
         current_book = self.get_current_book()
-        if current_book:
-            queryset = queryset.filter(book=current_book)
-        else:
-            queryset = queryset.none()  # Pokud není aktuální kniha, nevrátit nic
-        return queryset
+        return queryset.filter(book=current_book) if current_book else queryset.none()
 
 
 class SelectBookView(LoginRequiredMixin, View):
@@ -307,59 +313,56 @@ class SelectBookView(LoginRequiredMixin, View):
 class TransactionSummaryMixin:
 
     @staticmethod
-    def get_additional_context_data(filtered_qs):
-        # Výpočet agregátů (např. průměr, max/min částka) a jejich přidání do kontextu
+    def get_aggregates(filtered_qs):
+        """Vrací celkové statistiky transakcí (průměr, max/min, bilance, počet)."""
+        aggregates = filtered_qs.aggregate(
+            avg_amount=Avg(
+                Case(
+                    When(type='expense', then=-F('amount')),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            ),
+            max_amount=Max(
+                Case(
+                    When(type='expense', then=-F('amount')),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            ),
+            min_amount=Min(
+                Case(
+                    When(type='expense', then=-F('amount')),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            ),
+            total_balance=Sum(
+                Case(
+                    When(type='expense', then=-F('amount')),
+                    default=F('amount'),
+                    output_field=DecimalField()
+                )
+            ),
+            count=Count('id')
+        )
         return {
-            'average_amount': filtered_qs.aggregate(
-                avg_amount=Avg(
-                    Case(
-                        When(type='expense', then=F('amount') * Value(-1)),
-                        default=F('amount'),
-                        output_field=DecimalField()
-                    )
-                )
-            )['avg_amount'] or 0,
-            'max_transaction_amount': filtered_qs.aggregate(
-                max_amount=Max(
-                    Case(
-                        When(type='expense', then=F('amount') * Value(-1)),
-                        default=F('amount'),
-                        output_field=DecimalField()
-                    )
-                )
-            )['max_amount'] or 0,
-            'min_transaction_amount': filtered_qs.aggregate(
-                min_amount=Min(
-                    Case(
-                        When(type='expense', then=F('amount') * Value(-1)),
-                        default=F('amount'),
-                        output_field=DecimalField()
-                    )
-                )
-            )['min_amount'] or 0,
-            'balance': filtered_qs.aggregate(
-                total_balance=Sum(
-                    Case(
-                        When(type='expense', then=F('amount') * Value(-1)),
-                        default=F('amount'),
-                        output_field=DecimalField()
-                    )
-                )
-            )['total_balance'] or 0,
-            'transaction_count': filtered_qs.aggregate(count=Count('id'))['count']
+            'average_amount': aggregates['avg_amount'] or 0,
+            'max_transaction_amount': aggregates['max_amount'] or 0,
+            'min_transaction_amount': aggregates['min_amount'] or 0,
+            'balance': aggregates['total_balance'] or 0,
+            'transaction_count': aggregates['count']
         }
 
     @staticmethod
     def calculate_totals(filtered_qs):
         """Výpočet celkových hodnot pro příjem, výdaje a bilanci."""
-        total_income = filtered_qs.filter(type='income').aggregate(
-            total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
-        )['total']
-
-        total_expense = filtered_qs.filter(type='expense').aggregate(
-            total=Coalesce(Sum('amount', output_field=DecimalField()), Decimal('0'))
-        )['total']
-
+        totals = filtered_qs.aggregate(
+            total_income=Coalesce(Sum('amount', filter=Q(type='income'), output_field=DecimalField()), Decimal('0')),
+            total_expense=Coalesce(Sum('amount', filter=Q(type='expense'), output_field=DecimalField()), Decimal('0'))
+        )
+        total_income = totals['total_income']
+        total_expense = totals['total_expense']
         total_balance = total_income - total_expense
         return float(total_income), float(total_expense), float(total_balance)
 
@@ -462,11 +465,13 @@ class ObjectListView(LoginRequiredMixin, BookContextMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['object_plural_genitiv'] = self.model.object_plural_genitiv
-        context['object_singular_akluzativ'] = self.model.object_singular_akluzativ
-        context['add_url_name'] = f'{self.model._meta.model_name}-add'
-        context['edit_url_name'] = f'{self.model._meta.model_name}-edit'
-        context['delete_url_name'] = f'{self.model._meta.model_name}-delete'
+        context.update({
+            'object_plural_genitiv': self.model.object_plural_genitiv,
+            'object_singular_akluzativ': self.model.object_singular_akluzativ,
+            'add_url_name': f'{self.model._meta.model_name}-add',
+            'edit_url_name': f'{self.model._meta.model_name}-edit',
+            'delete_url_name': f'{self.model._meta.model_name}-delete',
+        })
         return context
 
 
@@ -580,9 +585,7 @@ class GenericDeleteView(LoginRequiredMixin, DeleteView):
         # Odebereme CSRF token a další nevhodné parametry
         query_params.pop('csrfmiddlewaretoken', None)
 
-        if query_params:
-            return f"{base_url}?{query_params.urlencode()}"
-        return base_url
+        return f"{base_url}?{query_params.urlencode()}" if query_params else base_url
 
     def get_success_url(self):
         """Vrátí URL na seznam objektů po úspěšné akci s filtry."""
@@ -602,10 +605,11 @@ class BookDeleteView(GenericDeleteView):
         book = self.get_object()
 
         # Získat výchozí kategorii pro danou knihu
-        default_category = Category.objects.get(book=book, is_default=True)
+        default_category = Category.objects.filter(book=book, is_default=True).first()
 
         # Aktualizovat transakce spojené s touto knihou
-        Transaction.objects.filter(category__book=book).update(category=default_category)
+        if default_category:
+            Transaction.objects.filter(category__book=book).update(category=default_category)
 
         # Pokud je potřeba knihu archivovat nebo smazat
         return super().delete(request, *args, **kwargs)
@@ -636,7 +640,11 @@ class MonthDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMi
 
     def get_context_data(self, year, month, **kwargs):
         context = super().get_context_data(**kwargs)
-        transactions = Transaction.objects.filter(book=self.get_current_book(), datestamp__year=year, datestamp__month=month)
+        transactions = Transaction.objects.filter(
+            book=self.get_current_book(),
+            datestamp__year=year,
+            datestamp__month=month
+        )
         total_income, total_expense, total_balance = self.calculate_totals(transactions)
         category_summaries = self.get_category_summaries(transactions, year=year, month=month)
 
@@ -658,7 +666,12 @@ class YearDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMix
 
     def get_context_data(self, year, **kwargs):
         context = super().get_context_data(**kwargs)
-        transactions = Transaction.objects.filter(book=self.get_current_book(), datestamp__year=year)
+
+        # Načtení všech transakcí pro daný rok a knihu
+        current_book = self.get_current_book()
+        transactions = Transaction.objects.filter(book=current_book, datestamp__year=year)
+
+        # Výpočet agregátů
         total_income, total_expense, total_balance = self.calculate_totals(transactions)
         months, category_summaries, monthly_balances = self.get_yearly_category_summaries(year)
 
@@ -672,11 +685,6 @@ class YearDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMix
         monthly_data = {}
         for category in category_summaries:
             monthly_data[category.name] = [monthly_balances[category.name].get(month, 0) for month in months]
-
-        # Konverze Decimal na float (kvůli JSON serializaci)
-        total_income = float(total_income)
-        total_expense = float(total_expense)
-        total_balance = float(total_balance)
 
         context.update({
             'year': year,
@@ -695,7 +703,7 @@ class YearDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMix
     def get_yearly_category_summaries(self, year):
         """Získá souhrny kategorií a měsíční bilance pro daný rok."""
         current_book = self.get_current_book()
-        transactions = Transaction.objects.filter(book=self.get_current_book(), datestamp__year=year)
+        transactions = Transaction.objects.filter(book=current_book, datestamp__year=year)
 
         # Pokud se zpracovává aktuální rok, použijeme aktuální měsíc jako počet měsíců, jinak hodnotu 12
         month_count = date.today().month if year == date.today().year else 12
@@ -712,8 +720,7 @@ class YearDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMix
                     output_field=DecimalField()
                 ),
                 Decimal('0')
-            )
-        ).annotate(
+            ),
             monthly_average=Coalesce(
                 Sum(
                     Case(
@@ -794,12 +801,12 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
     def post(self, request, *args, **kwargs):
         # Získání ID aktuální knihy
-        print(f"Obsah request.POST požadavku: {request.POST}")
+        print(f"Obsah request.POST požadavku: {request.POST}")   # debuguing
         book = self.get_current_book()
 
         # Získání seznamu vybraných transakcí
         selected_transactions = request.POST.get('selected_transactions')
-        print(f"Získání seznamu vybraných transakcí: {selected_transactions}")
+        print(f"Získání seznamu vybraných transakcí: {selected_transactions}")  # debuguing
 
         if not selected_transactions:
             messages.warning(request, "Nevybrali jste žádné transakce.")
