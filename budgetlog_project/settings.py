@@ -112,7 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'cs'
 
 TIME_ZONE = 'UTC'
 
@@ -165,6 +165,6 @@ a SMTP serverem."""
 EMAIL_HOST_USER = 'budgetlognoreply@gmail.com'
 """EMAIL_HOST_USER je uživatelské jméno (většinou emailová adresa), které se používá k přihlášení k SMTP serveru. 
 Toto je emailová adresa, z níž se budou odesílat emaily."""
-EMAIL_HOST_PASSWORD = ''  # Zde vložte 16místné heslo aplikace
+EMAIL_HOST_PASSWORD = 'xxxxxxxxxxxxxxxx'  # Zde vložte 16místné heslo aplikace
 """Hesla aplikací umožňují přihlásit se k účtu Google ve starších aplikacích a službách, které nepodporují moderní 
 bezpečnostní standardy."""

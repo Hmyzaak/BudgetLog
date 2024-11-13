@@ -1,8 +1,12 @@
-import django_filters
+# Django importy
 from django import forms
-from .forms import TransactionFilterForm
-from .models import *
-from budgetlog.templatetags.widgets import ColoredTagWidget
+
+# Třetí strany
+import django_filters
+
+# Lokální aplikace
+from .forms import TransactionFilterForm, ColoredTagWidget
+from .models import Category, Transaction, Tag
 
 
 class TransactionFilter(django_filters.FilterSet):

@@ -1,35 +1,68 @@
-from django.core.management.base import BaseCommand
-from budgetlog.models import Transaction, Category, Account
-from django.utils import timezone
-from decimal import Decimal
 import random
-from datetime import timedelta
+from decimal import Decimal
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+from budgetlog.models import Book, Category, Tag, Transaction
 
 
 class Command(BaseCommand):
-    help = 'Populates the database with test data'
+    help = 'Generate test data for categories, tags, and transactions for a specific user and book'
 
     def handle(self, *args, **kwargs):
-        """
-        # Vytvoření kategorií
-        categories = ['Potraviny', 'Doprava', 'Zábava', 'Nájem', 'Úspory']
-        for category_name in categories:
-            Category.objects.get_or_create(name=category_name)
-        """
+        book_id = 37
 
-        # Vložení transakcí
-        categories = Category.objects.all()
-        accounts = Account.objects.all()
-        types = ['income', 'expense']
-        now = timezone.now()
-        for _ in range(1000):  # Vložení 1000 transakcí
-            Transaction.objects.create(
-                amount=Decimal(random.uniform(5, 500)),
-                category=random.choice(categories),
-                datestamp=now - timedelta(days=random.randint(0, 365*2)),
-                description='Testovací transakce',
-                account=random.choice(accounts),
-                type=random.choice(types)
+        # Získání konkrétní knihy
+        book = Book.objects.get(id=book_id)
+
+        # Generování 5 kategorií
+        categories = []
+        for i in range(5):
+            category = Category.objects.create(
+                name=f'Kategorie {i+1}',
+                color=f'#{random.randint(0, 0xFFFFFF):06x}',
+                description=f'Popis kategorie {i+1}',
+                book=book
+            )
+            categories.append(category)
+
+        self.stdout.write(self.style.SUCCESS(f'Vygenerováno 5 kategorií pro knihu s id={book_id}'))
+
+        # Generování 9 tagů
+        tags = []
+        for i in range(9):
+            tag = Tag.objects.create(
+                name=f'Tag {i+1}',
+                color=f'#{random.randint(0, 0xFFFFFF):06x}',
+                description=f'Popis tagu {i+1}',
+                book=book
+            )
+            tags.append(tag)
+
+        self.stdout.write(self.style.SUCCESS(f'Vygenerováno 9 tagů pro knihu s id={book_id}'))
+
+        # Generování 1000 transakcí
+        transaction_types = ['income', 'expense']
+        for _ in range(1000):
+            # Náhodná částka mezi 10 a 10000 CZK, se 2 desetinnými místy
+            amount = Decimal(random.uniform(10, 10000)).quantize(Decimal('0.01'))
+            # Náhodný typ transakce
+            type_choice = random.choice(transaction_types)
+            # Náhodné datum v rámci posledních 1000 dnech
+            datestamp = timezone.now().date() - timezone.timedelta(days=random.randint(0, 1000))
+            # Náhodná kategorie z vytvořených kategorií nebo None
+            category = random.choice(categories)
+            # Vytvoření transakce
+            transaction = Transaction.objects.create(
+                book=book,
+                amount=amount,
+                category=category,
+                datestamp=datestamp,
+                description=f'Popis transakce {_+1}',
+                type=type_choice
             )
 
-        self.stdout.write(self.style.SUCCESS('Successfully populated the database'))
+            # Přiřazení 0 až 5 náhodných tagů
+            transaction_tags = random.sample(tags, random.randint(0, 5))
+            transaction.tags.set(transaction_tags)
+
+        self.stdout.write(self.style.SUCCESS(f'Vygenerováno 1000 transakcí pro knihu s id={book_id}'))

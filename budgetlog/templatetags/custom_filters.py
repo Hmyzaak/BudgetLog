@@ -11,7 +11,8 @@ MONTHS_CS = {
 
 @register.filter(name='format_month_cs')
 def format_month_cs(month):
-    return MONTHS_CS.get(month, '')
+    """Vrací název měsíce v češtině nebo prázdný řetězec, pokud měsíc není validní."""
+    return MONTHS_CS.get(month, '') if isinstance(month, int) and 1 <= month <= 12 else ''
 
 
 @register.filter

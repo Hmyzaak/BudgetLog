@@ -1,11 +1,36 @@
+# Django importy
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm, SetPasswordForm
-from .models import *
-from budgetlog.templatetags.widgets import ColoredTagWidget
+from django.forms import CheckboxSelectMultiple
+from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy
+
+# Lokální aplikace
+from .models import Transaction, Category, Tag, AppUser
+
+
+class ColoredTagWidget(CheckboxSelectMultiple):
+    """Vlastní widget pro výběr tagů s barvami, kde jsou tagy zobrazeny vedle sebe."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tags = {tag.pk: tag.color for tag in Tag.objects.all()}  # Načtení všech tagů s barvou
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex=subindex, attrs=attrs)
+
+        # Nastavení barvy na základě předem načteného slovníku tagů
+        tag_color = self.tags.get(value)
+        option['attrs']['style'] = 'flex: 1 1 auto; margin: 5px;'
+        option['label'] = mark_safe(f'<span style="background-color: {tag_color}; color: white; padding: 2px 5px; '
+                                    f'border-radius: 5px; display: inline-block;">{label}</span>')
+
+        return option
 
 
 class TransactionForm(forms.ModelForm):
     """Formulář pro přidání a úpravu transakcí."""
+
     tags = forms.ModelMultipleChoiceField(
         queryset=Tag.objects.all(),
         widget=ColoredTagWidget,
@@ -24,9 +49,8 @@ class TransactionForm(forms.ModelForm):
         # Upravuje pomocný text pro pole datestamp
 
     def __init__(self, *args, **kwargs):
-        # Přidání pop argumentu 'book'
         self.book = kwargs.pop('book', None)  # Získání knihy z kwargs
-        super().__init__(*args, **kwargs)  # Volání parent konstruktoru
+        super().__init__(*args, **kwargs)
 
         # Aktualizace querysetů pro category a account pouze pro aktuální knihu
         if self.book:
@@ -84,89 +108,71 @@ class TagForm(forms.ModelForm):
         }
 
 
-class UserRegistrationForm(UserCreationForm):
+# Společná třída pro české texty heslových polí
+class PasswordFieldTextsMixin:
+    @staticmethod
+    def get_password_help_text():
+        return (
+            "<ul>"
+            "<li>Heslo musí obsahovat alespoň 8 znaků.</li>"
+            "<li>Heslo nesmí obsahovat pouze číslice.</li>"
+            "<li>Heslo nesmí být příliš jednoduché.</li>"
+            "<li>Heslo nesmí být příliš podobné ostatním osobním informacím.</li>"
+            "</ul>"
+        )
+
+
+class UserRegistrationForm(PasswordFieldTextsMixin, UserCreationForm):
+    """Formulář pro registraci uživatele s vlastní validací hesla."""
+
+    email = forms.EmailField(label="E-mail", error_messages={
+        'invalid': gettext_lazy("Zadejte platnou e-mailovou adresu.")  # Překlad chybové hlášky do češtiny
+    })
+
     class Meta:
         model = AppUser
         fields = ['email']  # Zobrazujeme jen email, hesla jsou již obsažena v UserCreationForm
-        labels = {
-            'email': 'E-mail',
-        }
+        labels = {'email': 'E-mail'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Nastavení textů políček pro heslo
         self.fields['password1'].label = "Nové heslo"
-        self.fields['password1'].help_text = (
-            "<ul>"
-            "<li>Heslo musí obsahovat alespoň 8 znaků.</li>"
-            "<li>Heslo nesmí obsahovat pouze číslice.</li>"
-            "<li>Heslo nesmí být příliš jednoduché.</li>"
-            "<li> Heslo nesmí být příliš podobné ostatním osobním informacím.</li>"
-            "</ul>"
-        )
+        self.fields['password1'].help_text = self.get_password_help_text()
         self.fields['password2'].label = "Nové heslo pro potvrzení"
         self.fields['password2'].help_text = "Zadejte nové heslo pro potvrzení."
 
-    # Přidáme vlastní validaci hesla
-    def clean(self):
-        cleaned_data = super().clean()
-        password1 = cleaned_data.get("password1")
-        password2 = cleaned_data.get("password2")
-
-        if password1 != password2:
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
             raise forms.ValidationError("Zadaná hesla se neshodují.")
-
-        return cleaned_data
+        return password2
 
 
 class LoginForm(forms.Form):
-    email = forms.CharField()
-    password = forms.CharField(widget=forms.PasswordInput)
-
-    class Meta:
-        fields = ["email", "password"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Nastavení textů políček pro email a heslo
-        self.fields['email'].label = "E-mail"
-        self.fields['password'].label = "Heslo"
+    email = forms.CharField(label="E-mail")
+    password = forms.CharField(widget=forms.PasswordInput, label="Heslo")
 
 
-class CustomPasswordChangeForm(PasswordChangeForm):
+class CustomPasswordChangeForm(PasswordFieldTextsMixin, PasswordChangeForm):
     """Formulář pro změnu hesla s přizpůsobenými českými texty."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Přizpůsobení českých textů v polích
         self.fields['old_password'].label = "Staré heslo"
         self.fields['new_password1'].label = "Nové heslo"
-        self.fields['new_password1'].help_text = (
-            "<ul>"
-            "<li>Heslo musí obsahovat alespoň 8 znaků.</li>"
-            "<li>Heslo nesmí obsahovat pouze číslice.</li>"
-            "<li>Heslo nesmí být příliš jednoduché.</li>"
-            "<li> Heslo nesmí být příliš podobné ostatním osobním informacím.</li>"
-            "</ul>"
-        )
+        self.fields['new_password1'].help_text = self.get_password_help_text()
         self.fields['new_password2'].label = "Nové heslo pro potvrzení"
         self.fields['new_password2'].help_text = "Zadejte nové heslo pro potvrzení."
 
 
-class CustomPasswordResetForm(SetPasswordForm):
+class CustomPasswordResetForm(PasswordFieldTextsMixin, SetPasswordForm):
     """Formulář pro reset hesla s přizpůsobenými českými texty."""
 
     def __init__(self, user, *args, **kwargs):
         super().__init__(user, *args, **kwargs)
-        # Přizpůsobení českých textů v polích
         self.fields['new_password1'].label = "Nové heslo"
-        self.fields['new_password1'].help_text = (
-            "<ul>"
-            "<li>Heslo musí obsahovat alespoň 8 znaků.</li>"
-            "<li>Heslo nesmí obsahovat pouze číslice.</li>"
-            "<li>Heslo nesmí být příliš jednoduché.</li>"
-            "<li> Heslo nesmí být příliš podobné ostatním osobním informacím.</li>"
-            "</ul>"
-        )
+        self.fields['new_password1'].help_text = self.get_password_help_text()
         self.fields['new_password2'].label = "Nové heslo pro potvrzení"
         self.fields['new_password2'].help_text = "Zadejte nové heslo pro potvrzení."
