@@ -414,7 +414,7 @@ class TransactionListView(LoginRequiredMixin, BookContextMixin, TransactionSumma
         context['all_categories'] = Category.objects.filter(book=self.get_current_book())
 
         # Výpočet souhrnů a přidání do kontextu
-        summary_data = self.get_additional_context_data(filtered_qs)
+        summary_data = self.get_aggregates(filtered_qs)
         context.update(summary_data)
 
         # Paginace
@@ -801,12 +801,10 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
     def post(self, request, *args, **kwargs):
         # Získání ID aktuální knihy
-        print(f"Obsah request.POST požadavku: {request.POST}")   # debuguing
         book = self.get_current_book()
 
         # Získání seznamu vybraných transakcí
         selected_transactions = request.POST.get('selected_transactions')
-        print(f"Získání seznamu vybraných transakcí: {selected_transactions}")  # debuguing
 
         if not selected_transactions:
             messages.warning(request, "Nevybrali jste žádné transakce.")
@@ -818,22 +816,19 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
         # Zpracování jednotlivých akcí podle toho, co bylo zvoleno za akci
         action = request.POST.get('action')
-        if action == 'assign_tag':
-            return self.assign_tag(request, transactions, book)
-        elif action == 'remove_tag':
-            return self.remove_tag(request, transactions, book)
-        elif action == 'change_category':
-            return self.change_category(request, transactions, book)
-        elif action == 'delete':
-            return self.delete_transactions(request, transactions)
-        elif action == 'export_csv':
-            return self.export_transactions_to_csv(request, transactions)
-        elif action == 'move_to_book':
-            return self.move_transactions_to_book(request, transactions)
+        action_mapping = {
+            'assign_tag': self.assign_tag,
+            'remove_tag': self.remove_tag,
+            'change_category': self.change_category,
+            'delete': self.delete_transactions,
+            'export_csv': self.export_transactions_to_csv,
+            'move_to_book': self.move_transactions_to_book,
+        }
+        if action in action_mapping:
+            return action_mapping[action](request, transactions, book)
         else:
             messages.error(request, "Neplatná akce.")
             return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
-        print(f"Získaná akce: {action}")
 
     def assign_tag(self, request, transactions, book):
         """Přiřadí tag vybraným transakcím."""
@@ -843,7 +838,7 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
             return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
         tag = get_object_or_404(Tag, id=tag_id, book=book)  # Tag musí být z aktuální knihy
-        for transaction in transactions:
+        for transaction in transactions:  # Zamysli se nad zvýšením rychlosti procesu
             transaction.tags.add(tag)
         messages.success(request, f"{transactions.count()} transakcím byl přiřazen tag: {tag.name}.")
         # Přesměrování na stránku s původními filtry
@@ -874,14 +869,14 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
         messages.success(request, f"Kategorie změněna u {transactions.count()} transakcí na: {category.name}.")
         return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
-    def delete_transactions(self, request, transactions):
+    def delete_transactions(self, request, transactions, book):
         """Smaže vybrané transakce."""
         count = transactions.count()
         transactions.delete()
         messages.success(request, f"Smazáno {count} transakcí.")
         return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
 
-    def export_transactions_to_csv(self, request, transactions):
+    def export_transactions_to_csv(self, request, transactions, book):
         """Exportuje vybrané transakce do CSV souboru."""
         # Nastavení HTTP odpovědi pro CSV export
         response = HttpResponse(content_type='text/csv')
@@ -899,9 +894,9 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
             writer.writerow([
                 transaction.id,
                 transaction.datestamp,
-                transaction.category.name,
+                transaction.category.name if transaction.category else '',
                 transaction.adjusted_amount,
-                transaction.display_tags(transaction),
+                ', '.join([tag.name for tag in transaction.tags.all()]),
                 transaction.description,
                 transaction.type,
                 transaction.book,
@@ -909,11 +904,9 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
         # Vrácení CSV výstupu ve správném kódování UTF-8
         response.write(output.getvalue().encode('utf-8-sig'))
-        print("Provedena celá akce ve views.")
-
         return response
 
-    def move_transactions_to_book(self, request, transactions):
+    def move_transactions_to_book(self, request, transactions, book):
         """Přesune vybrané transakce do jiné knihy a zajistí vytvoření chybějících tagů a kategorií."""
         new_book_id = request.POST.get('bulk_book')
         if not new_book_id:
