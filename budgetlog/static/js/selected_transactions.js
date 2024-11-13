@@ -1,3 +1,11 @@
+function showLoadingCursor() {
+    document.body.classList.add('loading-cursor');
+}
+
+function hideLoadingCursor() {
+    document.body.classList.remove('loading-cursor');
+}
+
 // Event listener na odeslání formuláře
 document.getElementById('bulk-action-form').addEventListener('submit', function(event) {
     updateSelectedTransactionsInput();  // Aktualizace skrytého pole s transakcemi
@@ -11,6 +19,7 @@ document.getElementById('bulk-action-form').addEventListener('submit', function(
 
     // Odeslání formuláře přes AJAX, aby bylo možné čekat na odpověď
     event.preventDefault();  // Zabraňte klasickému odeslání formuláře
+    showLoadingCursor();  // Změna kurzoru na symbol načítání
 
     const formData = new FormData(this);  // Vytvoříme FormData objekt z formuláře
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;  // Získáme CSRF token
@@ -44,6 +53,9 @@ document.getElementById('bulk-action-form').addEventListener('submit', function(
     })
     .catch(error => {
         console.error('Chyba při odesílání formuláře:', error);
+    })
+    .finally(() => {
+        hideLoadingCursor();  // Obnovíme původní kurzor
     });
 });
 
@@ -57,13 +69,11 @@ document.getElementById('export-csv-btn').addEventListener('click', function() {
         checkbox.removeAttribute('name');
     });
 
+    showLoadingCursor();  // Změna kurzoru na symbol načítání
+
     const formData = new FormData(document.getElementById('bulk-action-form'));
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     formData.set('action', 'export_csv');  // Specifikujeme, že jde o export CSV
-
-    // Získejte správnou URL pro bulk akci
-    // const bulkTransactionActionUrl = "{% url 'bulk-transaction-action' %}";
-    // console.log('URL pro odeslání požadavku:', bulkTransactionActionUrl);  // Logování URL pro kontrolu
 
     // Poslání přes AJAX
     fetch(bulkTransactionActionUrl, {
@@ -98,6 +108,9 @@ document.getElementById('export-csv-btn').addEventListener('click', function() {
     })
     .catch(error => {
         console.error('Chyba při odesílání exportu do CSV:', error);
+    })
+    .finally(() => {
+        hideLoadingCursor();  // Obnovíme původní kurzor
     });
 });
 

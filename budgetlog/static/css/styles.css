@@ -33,6 +33,10 @@ main {
     cursor: pointer;
 }
 
+.loading-cursor {
+    cursor: wait;
+}
+
 #div_id_tags > fieldset > div {
     display: flex !important;
     flex-wrap: wrap !important;
