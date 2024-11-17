@@ -1,0 +1,71 @@
+budgetlog_project/
+├── .gitignore.txt
+├── db.sqlite3
+├── manage.py
+├── README.md
+├── budgetlog_project/
+│   ├── __init__.py
+│   ├── asgi.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+└── budgetlog/
+    ├── management/
+    │   └── commands/
+    │       ├── delete_data.py
+    │       └── populate_data.py
+    ├── media/
+    ├── migrations/
+    │   └── __init__.py
+    ├── static/
+    │   ├── css/
+    │   │   ├── bootstrap.min.css
+    │   │   └── styles.css
+    │   ├── js/
+    │   │   ├── bootstrap.bundle.min.js
+    │   │   ├── bootstrap.min.js
+    │   │   ├── clear_selected_transactions.js
+    │   │   ├── clickable_rows.js
+    │   │   ├── filter-toggle.js
+    │   │   ├── hamburger_menu.js
+    │   │   └── selected_transactions.js
+    │   └── pics/
+    │       └── logo.png
+    ├── templates/
+    │   ├── budgetlog/
+    │   │   ├── change_password.html
+    │   │   ├── dashboard.html
+    │   │   ├── delete_account.html
+    │   │   ├── monthly_detail.html
+    │   │   ├── object_confirm_delete.html
+    │   │   ├── object_form.html
+    │   │   ├── object_list.html
+    │   │   ├── profile.html
+    │   │   ├── setup_book.html
+    │   │   ├── transaction_detail.html
+    │   │   ├── transaction_list.html
+    │   │   ├── user_form.html
+    │   │   └── yearly_detail.html
+    │   ├── registration/
+    │   │   ├── password_reset_complete.html
+    │   │   ├── password_reset_confirm.html
+    │   │   ├── password_reset_done.html
+    │   │   ├── password_reset_email.html
+    │   │   ├── password_reset_email.txt
+    │   │   ├── password_reset_form.html
+    │   │   └── password_reset_subject.txt
+    │   └── base_generic.html
+    ├── templatetags/
+    │   ├── __init__.py
+    │   ├── custom_filters.py
+    │   └── query_transform.py
+    ├── __init__.py
+    ├── admin.py
+    ├── apps.py
+    ├── filters.py
+    ├── forms.py
+    ├── models.py
+    ├── signals.py
+    ├── tests.py
+    ├── urls.py
+    └── views.py
