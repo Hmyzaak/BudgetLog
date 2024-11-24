@@ -41,7 +41,7 @@ class TransactionForm(forms.ModelForm):
     class Meta:
         model = Transaction
         fields = ['amount', 'type', 'category', 'datestamp', 'description', 'tags']
-        widgets = {'datestamp': forms.DateInput(attrs={'type': 'date'}),
+        widgets = {'datestamp': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
                    'description': forms.Textarea(attrs={'rows': 1})
                    }
         # Upravuje vzhled polí ve formuláři. DateInput s type='date' umožňuje vybrat datum pomocí kalendáře.
