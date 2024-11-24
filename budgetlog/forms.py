@@ -1,30 +1,33 @@
 # Django importy
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm, SetPasswordForm
-from django.forms import CheckboxSelectMultiple
+from django.forms.widgets import CheckboxSelectMultiple
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy
 
 # Lokální aplikace
-from .models import Transaction, Category, Tag, AppUser
+from budgetlog.models import Transaction, Category, Tag, AppUser
 
 
 class ColoredTagWidget(CheckboxSelectMultiple):
     """Vlastní widget pro výběr tagů s barvami, kde jsou tagy zobrazeny vedle sebe."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.tags = {tag.pk: tag.color for tag in Tag.objects.all()}  # Načtení všech tagů s barvou
-
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
         option = super().create_option(name, value, label, selected, index, subindex=subindex, attrs=attrs)
+        self.tag_colors = {tag.pk: tag.color for tag in Tag.objects.all()}  # Načtení všech tagů s barvou
 
-        # Nastavení barvy na základě předem načteného slovníku tagů
-        tag_color = self.tags.get(value)
+        # Načtení barvy tagu dynamicky podle ID
+        try:
+            tag_color = self.tag_colors.get(value, "#000000")
+        except Tag.DoesNotExist:
+            tag_color = "#000000"  # Defaultní barva, pokud tag není nalezen
+
+        # Přidání stylu a labelu s barvou
         option['attrs']['style'] = 'flex: 1 1 auto; margin: 5px;'
-        option['label'] = mark_safe(f'<span style="background-color: {tag_color}; color: white; padding: 2px 5px; '
-                                    f'border-radius: 5px; display: inline-block;">{label}</span>')
-
+        option['label'] = mark_safe(
+            f'<span style="background-color: {tag_color}; color: white; padding: 2px 5px; '
+            f'border-radius: 5px; display: inline-block;">{label}</span>'
+        )
         return option
 
 
