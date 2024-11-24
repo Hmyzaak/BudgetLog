@@ -8,9 +8,19 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/wsgi/
 """
 
 import os
+import sys
+
+# Přidej cestu ke svému projektu
+path = '/home/hmyzaak/BudgetLog'
+if path not in sys.path:
+    sys.path.append(path)
+
+# Nastav virtuální prostředí
+os.environ['VIRTUAL_ENV'] = '/home/hmyzaak/BudgetLog/venv'
+sys.prefix = os.environ['VIRTUAL_ENV']
+
+# Nastav Django settings modul
+os.environ['DJANGO_SETTINGS_MODULE'] = 'budgetlog_project.settings'
 
 from django.core.wsgi import get_wsgi_application
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'budgetlog_project.settings')
-
 application = get_wsgi_application()

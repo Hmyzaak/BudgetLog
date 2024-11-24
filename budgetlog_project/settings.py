@@ -8,22 +8,23 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv  # Import knihovny pro práci s environmentálními proměnnými
 
-# Načtení environmentálních proměnných ze souboru .env
-load_dotenv()
+# Načtení environmentálních proměnných ze souboru .env (na PythonAnywhere, účet hmyzaak)
+# load_dotenv(dotenv_path='/home/hmyzaak/BudgetLog/budgetlog_project/.env')
+load_dotenv()  # env IDE
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: Keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-secret-key')
-"""Hodnota SECRET_KEY by měla být uložena v souboru .env a nikdy by neměla být veřejná. 
+"""Hodnota SECRET_KEY by měla být uložena v souboru .env a nikdy by neměla být veřejná.
 Pomocí 'os.getenv()' načítáme klíč z prostředí."""
 
 # SECURITY WARNING: Don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 """DEBUG je přepínač, který by měl být v produkčním prostředí nastaven na False."""
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 """ALLOWED_HOSTS načítá povolené domény z prostředí. Hodnoty jsou oddělené čárkami."""
 
 # Application definition
@@ -81,7 +82,7 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-"""SQLite jako první volba pro malé aplikace a použití na free účtu. 
+"""SQLite jako první volba pro malé aplikace a použití na free účtu.
 Pro větší projekty použijte PostgreSQL nebo MySQL."""
 
 # Password validation
@@ -112,7 +113,7 @@ AUTH_USER_MODEL = "budgetlog.AppUser"
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@budgetlog.cz')
+DEFAULT_FROM_EMAIL = 'budgetlognoreply@gmail.com'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = os.getenv('EMAIL_PORT', 587)
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
