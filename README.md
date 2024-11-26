@@ -1,5 +1,6 @@
 # Název aplikace
-*Krátký popis aplikace, například: Aplikace pro správu financí s možností zaznamenávání transakcí, správy kategorií a analýzy výdajů.*
+*Aplikace pro správu financí s možností zaznamenávání transakcí, správy kategorií a analýzy výdajů.*\
+Aktuálně je aplikace spuštěna v testovacím režimu na stránkách: **https://budgetlog.pythonanywhere.com/**
 
 ---
 
@@ -10,10 +11,9 @@
 4. [Použití](#použití)
 5. [Architektura projektu](#architektura-projektu)
 6. [Testování](#testování)
-7. [Contributing](#contributing)
-8. [Licence](#licence)
-9. [Autoři a poděkování](#autoři-a-poděkování)
-10. [Známé problémy a plánovaný vývoj](#známé-problémy-a-plánovaný-vývoj)
+7. [Licence](#licence)
+8. [Autoři](#autoři)
+9. [Známé problémy a plánovaný vývoj](#známé-problémy-a-plánovaný-vývoj)
 
 ---
 
@@ -36,7 +36,7 @@
 ## Instalace a spuštění
 1. **Naklonování repozitáře:**
    ```bash
-   git clone https://github.com/uzivatel/BudgetLog.git
+   git clone https://github.com/hmyzaak/BudgetLog.git
    cd BudgetLog
 
 2. **Vytvoření a aktivace virtuálního prostředí:**
@@ -76,6 +76,7 @@
 ---
 
 ## Testování
+[Ještě nevytvořeno]
 - **Spuštění všech testů:**
     ```bash
     python manage.py test
@@ -83,18 +84,12 @@
 
 ---
 
-## Contributing
-Přispěvatelé mohou posílat pull requesty na větev main.
-Pro větší změny vytvořte předem issue a projednejte návrhy.
-
----
-
 ## Licence
-Uveďte typ licence (např. MIT nebo GPL-3.0) a odkaz na soubor LICENSE.
+*Uveďte typ licence (např. MIT nebo GPL-3.0) a odkaz na soubor LICENSE.*
 
 ---
 
-## Autoři a poděkování
+## Autoři
 **Autor**: JakVoj
 
 ---
