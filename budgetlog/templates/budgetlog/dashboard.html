@@ -4,11 +4,16 @@
 {% block content %}
 <h1>Souhrnné přehledy</h1>
 
+<h2>Seznam všech transakcí</h2>
+<a href="{% url 'transaction-list' %}" class="btn btn-primary">Veškeré transakce a filtrování</a>
+
+<h2>Souhrnné přehledy podle období</h2>
+
 <!-- Seznam roků -->
 <div class="years">
     {% for year in years %}
         <div class="year-item mb-4">
-            <h2>{{ year.year }}</h2>
+            <h3>{{ year.year }}</h3>
 
             <!-- Rozbalovací menu pro jednotlivé měsíce -->
             <div class="dropdown">

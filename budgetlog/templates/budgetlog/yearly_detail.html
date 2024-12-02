@@ -77,25 +77,58 @@
 
 <div>
     <h2>Graf bilancí podle kategorií</h2>
+    <div class="d-grid gap-2 mb-3 mt-3 d-md-block">
+        <button id="openModalButton" class="btn btn-primary">Zobrazit graf v detailu</button>
+    </div>
+</div>
+<!-- Přidání dat jako atributů -->
+<div id="chartData"
+     data-categories="{{ categories_json|escapejs }}"
+     data-months="{{ months_json|escapejs }}"
+     data-monthly-data="{{ monthly_data_json|escapejs }}">
+</div>
+
+<!-- Modalní okno -->
+<div id="chartModal" class="modal">
+    <div class="modal-content">
+        <span id="closeModalButton" class="close">&times;</span>
+        <h2>Detailní zobrazení grafu</h2>
         <p>
             Kliknutí na barvu nebo název kategorie danou kategorii odeberte nebo přidáte do zobrazení v grafu:
         </p>
-    <canvas id="transactionsChart" width="400" height="200"></canvas>
-    <div>
-        {% for category in categories %}
-            <input type="checkbox" id="category_{{ category.id }}" name="categories" value="{{ category.name }}" checked>
-            <label for="category_{{ category.id }}">{{ category.name }}</label>
-        {% endfor %}
+        <!-- Kontejner pro posuvné zobrazení -->
+        <div id="chartContainer" style="overflow: hidden; cursor: grab;">
+            <canvas id="transactionsChart" width="1000" height="400"></canvas>
+        </div>
+        <div>
+            {% for category in categories %}
+                <input type="checkbox" id="category_{{ category.id }}" name="categories" value="{{ category.name }}" checked>
+                <label for="category_{{ category.id }}">{{ category.name }}</label>
+            {% endfor %}
+        </div>
     </div>
 </div>
+
 <script>
     console.log("Categories JSON:", JSON.parse('{{ categories_json|escapejs }}'));
     console.log("Months JSON:", JSON.parse('{{ months_json|escapejs }}'));
     console.log("Monthly Data JSON:", JSON.parse('{{ monthly_data_json|escapejs }}'));
 </script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const ctx = document.getElementById('transactionsChart').getContext('2d');
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('chartModal');
+    const openModalButton = document.getElementById('openModalButton');
+    const closeModalButton = document.getElementById('closeModalButton');
+    const chartContainer = document.getElementById('chartContainer');
+    const ctx = document.getElementById('transactionsChart').getContext('2d');
+    let transactionsChart = null; // Uchováváme instanci grafu
+
+    // Funkce pro vykreslení grafu
+    function renderChart() {
+        if (transactionsChart) {
+            transactionsChart.destroy(); // Pokud graf již existuje, zničíme ho
+        }
+
         const categories = JSON.parse('{{ categories_json|escapejs }}');
         const months = JSON.parse('{{ months_json|escapejs }}');
         const monthlyData = JSON.parse('{{ monthly_data_json|escapejs }}');
@@ -122,7 +155,7 @@
         }
 
         const chartData = {
-            labels: translateMonths(months),  // Translate month names to Czech
+            labels: translateMonths(months), // Translate month names to Czech
             datasets: categories.map(category => ({
                 label: category.name,
                 data: monthlyData[category.name],
@@ -130,10 +163,12 @@
             }))
         };
 
-        const transactionsChart = new Chart(ctx, {
+        transactionsChart = new Chart(ctx, {
             type: 'bar',
             data: chartData,
             options: {
+                responsive: true,
+                maintainAspectRatio: false, // Zakazujeme udržování poměru stran
                 scales: {
                     x: {
                         title: {
@@ -147,25 +182,71 @@
                             text: 'Bilance transakcí'
                         }
                     }
+                },
+                plugins: {
+                    zoom: {
+                        zoom: {
+                            wheel: {
+                                enabled: true
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'xy'
+                        }
+                    }
                 }
             }
         });
+    }
 
-        document.querySelectorAll('input[name="categories"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                const selectedCategories = Array.from(document.querySelectorAll('input[name="categories"]:checked'))
-                    .map(cb => cb.value);
-                transactionsChart.data.datasets = categories
-                    .filter(category => selectedCategories.includes(category.name))
-                    .map(category => ({
-                        label: category.name,
-                        data: monthlyData[category.name],
-                        backgroundColor: category.color,
-                    }));
-                transactionsChart.update();
-            });
-        });
+    // Otevření modálního okna
+    openModalButton.addEventListener('click', () => {
+        modal.style.display = 'block';
+        renderChart(); // Vykreslíme graf při otevření modálního okna
     });
+
+    // Zavření modálního okna
+    closeModalButton.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    // Zavření při kliknutí mimo obsah modálu
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Funkce pro drag-to-scroll
+    let isDragging = false;
+    let startX, scrollLeft;
+
+    chartContainer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        chartContainer.style.cursor = 'grabbing';
+        startX = e.pageX - chartContainer.offsetLeft;
+        scrollLeft = chartContainer.scrollLeft;
+    });
+
+    chartContainer.addEventListener('mouseleave', () => {
+        isDragging = false;
+        chartContainer.style.cursor = 'grab';
+    });
+
+    chartContainer.addEventListener('mouseup', () => {
+        isDragging = false;
+        chartContainer.style.cursor = 'grab';
+    });
+
+    chartContainer.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - chartContainer.offsetLeft;
+        const walk = (x - startX) * 1.5; // Rychlost posunu
+        chartContainer.scrollLeft = scrollLeft - walk;
+    });
+});
 </script>
 
 {% endblock %}

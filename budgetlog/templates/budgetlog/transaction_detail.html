@@ -24,6 +24,6 @@
     <p><strong>Akce:</strong>
         <a href="{% url 'transaction-edit' transaction.id %}?{{ request.GET.urlencode }}" class="btn btn-secondary btn-sm">Upravit</a>
         <a href="{% url 'transaction-delete' transaction.id %}?{{ request.GET.urlencode }}" class="btn btn-danger btn-sm">Smazat</a>
-        <a href="{% url 'transaction-list' %}?{{ request.GET.urlencode }}" class="btn btn-secondary btn-sm">Zpět na seznam transakcí</a>
+        <a href="{% url 'transaction-list' %}?{{ request.GET.urlencode }}" class="btn btn-secondary btn-sm">Na kompletní seznam transakcí</a>
     </p>
 {% endblock %}

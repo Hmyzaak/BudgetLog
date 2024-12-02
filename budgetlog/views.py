@@ -303,8 +303,8 @@ class SelectBookView(LoginRequiredMixin, View):
             book = get_object_or_404(Book, id=book_id, owner=request.user)
             # Nastavení aktivní knihy v session
             request.session['current_book_id'] = book.id
-            # Přesměrování na stránku s transakcemi nebo jinou stránku po výběru knihy
-            return redirect('transaction-list')  # Nebo jiný název URL pro zobrazení transakcí
+            # Přesměrování na stránku pro přidání nové transakce
+            return redirect('transaction-add')
         else:
             messages.error(request, "Kniha nebyla nalezena.")
             return redirect('book-list')
