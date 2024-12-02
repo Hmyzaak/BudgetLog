@@ -5,7 +5,7 @@
 
 main {
     padding-bottom: 28px;
-    padding-top: 84px; /* Výchozí výška pro pevně umístěnou navbar */
+    padding-top: 104px; /* Výchozí výška pro pevně umístěnou navbar */
 }
 
 .navbar {
@@ -37,6 +37,40 @@ main {
     cursor: wait;
 }
 
+/* graf v modálním oknu v ročním přehledu */
+.modal {
+    display: none; /* Skryté ve výchozím stavu */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 900px;
+}
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* zobrazení tagů */
 #div_id_tags > fieldset > div {
     display: flex !important;
     flex-wrap: wrap !important;
