@@ -9,7 +9,7 @@ from pathlib import Path
 from dotenv import load_dotenv  # Import knihovny pro práci s environmentálními proměnnými
 
 # Načtení environmentálních proměnných ze souboru .env (na PythonAnywhere, účet hmyzaak)
-# load_dotenv(dotenv_path='/home/hmyzaak/BudgetLog/budgetlog_project/.env')
+# load_dotenv(dotenv_path='/home/budgetlog/BudgetLog/budgetlog_project/.env')
 load_dotenv()  # env IDE
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -101,10 +101,10 @@ USE_TZ = True
 
 # Static and media files
 STATIC_URL = '/static/'
-STATIC_ROOT = '/home/hmyzaak/BudgetLog/static/'
+STATIC_ROOT = '/home/budgetlog/BudgetLog/static/'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/home/hmyzaak/BudgetLog/media/'
+MEDIA_ROOT = '/home/budgetlog/BudgetLog/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

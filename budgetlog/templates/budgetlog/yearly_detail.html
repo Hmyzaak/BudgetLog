@@ -1,4 +1,5 @@
 {% extends "base_generic.html" %}
+{% load static %}
 
 {% block content %}
 <h1>Roční souhrn za {{ year }}</h1>
@@ -80,12 +81,6 @@
     <div class="d-grid gap-2 mb-3 mt-3 d-md-block">
         <button id="openModalButton" class="btn btn-primary">Zobrazit graf v detailu</button>
     </div>
-</div>
-<!-- Přidání dat jako atributů -->
-<div id="chartData"
-     data-categories="{{ categories_json|escapejs }}"
-     data-months="{{ months_json|escapejs }}"
-     data-monthly-data="{{ monthly_data_json|escapejs }}">
 </div>
 
 <!-- Modalní okno -->

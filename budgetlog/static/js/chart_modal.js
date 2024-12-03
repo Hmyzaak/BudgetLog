@@ -2,8 +2,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('chartModal');
     const openModalButton = document.getElementById('openModalButton');
     const closeModalButton = document.getElementById('closeModalButton');
+    const chartContainer = document.getElementById('chartContainer');
     const ctx = document.getElementById('transactionsChart').getContext('2d');
     let transactionsChart = null; // Uchováváme instanci grafu
+
+    function parseJSONData(attribute) {
+        try {
+            return JSON.parse(attribute);
+        } catch (error) {
+            console.error('Chyba při parsování JSON dat:', error);
+            return null; // Pokud parsování selže, vrátíme `null`
+        }
+    }
 
     // Funkce pro vykreslení grafu
     function renderChart() {
@@ -11,9 +21,17 @@ document.addEventListener('DOMContentLoaded', function () {
             transactionsChart.destroy(); // Pokud graf již existuje, zničíme ho
         }
 
-        const categories = JSON.parse('{{ categories_json|escapejs }}');
-        const months = JSON.parse('{{ months_json|escapejs }}');
-        const monthlyData = JSON.parse('{{ monthly_data_json|escapejs }}');
+        // Získání dat z `data-*` atributů
+        const chartDataElement = document.getElementById('chartData');
+        // Získání a validace dat
+        const categories = parseJSONData(chartDataElement.getAttribute('data-categories'));
+        const months = parseJSONData(chartDataElement.getAttribute('data-months'));
+        const monthlyData = parseJSONData(chartDataElement.getAttribute('data-monthly-data'));
+
+        if (!categories || !months || !monthlyData) {
+            console.error('Data nejsou správně načtena. Graf nebude vykreslen.');
+            return; // Ukončíme vykreslení, pokud data nejsou validní
+        }
 
         // Mapping English month names to Czech
         const monthNames = {
@@ -40,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
             labels: translateMonths(months), // Translate month names to Czech
             datasets: categories.map(category => ({
                 label: category.name,
-                data: monthlyData[category.name],
+                data: monthlyData[category.name] || [],
                 backgroundColor: category.color,
             }))
         };
@@ -50,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
             data: chartData,
             options: {
                 responsive: true,
-                maintainAspectRatio: true, // Zachová fixní poměr stran
+                maintainAspectRatio: false, // Zakazujeme udržování poměru stran
                 scales: {
                     x: {
                         title: {
@@ -100,22 +118,32 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Aktualizace grafu na základě výběru kategorií
-    document.querySelectorAll('input[name="categories"]').forEach(checkbox => {
-        checkbox.addEventListener('change', function () {
-            const categories = JSON.parse('{{ categories_json|escapejs }}');
-            const monthlyData = JSON.parse('{{ monthly_data_json|escapejs }}');
-            const selectedCategories = Array.from(document.querySelectorAll('input[name="categories"]:checked'))
-                .map(cb => cb.value);
+    // Funkce pro drag-to-scroll
+    let isDragging = false;
+    let startX, scrollLeft;
 
-            transactionsChart.data.datasets = categories
-                .filter(category => selectedCategories.includes(category.name))
-                .map(category => ({
-                    label: category.name,
-                    data: monthlyData[category.name],
-                    backgroundColor: category.color,
-                }));
-            transactionsChart.update();
-        });
+    chartContainer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        chartContainer.style.cursor = 'grabbing';
+        startX = e.pageX - chartContainer.offsetLeft;
+        scrollLeft = chartContainer.scrollLeft;
+    });
+
+    chartContainer.addEventListener('mouseleave', () => {
+        isDragging = false;
+        chartContainer.style.cursor = 'grab';
+    });
+
+    chartContainer.addEventListener('mouseup', () => {
+        isDragging = false;
+        chartContainer.style.cursor = 'grab';
+    });
+
+    chartContainer.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - chartContainer.offsetLeft;
+        const walk = (x - startX) * 1.5; // Rychlost posunu
+        chartContainer.scrollLeft = scrollLeft - walk;
     });
 });
