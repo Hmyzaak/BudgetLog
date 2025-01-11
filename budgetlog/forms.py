@@ -137,6 +137,11 @@ class UserRegistrationForm(PasswordFieldTextsMixin, UserCreationForm):
         fields = ['email']  # Zobrazujeme jen email, hesla jsou již obsažena v UserCreationForm
         labels = {'email': 'E-mail'}
 
+    def clean_email(self):
+        """Převede e-mail na malá písmena."""
+        email = self.cleaned_data.get("email")
+        return email.lower() if email else email
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Nastavení textů políček pro heslo
@@ -156,6 +161,11 @@ class UserRegistrationForm(PasswordFieldTextsMixin, UserCreationForm):
 class LoginForm(forms.Form):
     email = forms.CharField(label="E-mail")
     password = forms.CharField(widget=forms.PasswordInput, label="Heslo")
+
+    def clean_email(self):
+        """Převede e-mail na malá písmena."""
+        email = self.cleaned_data.get("email")
+        return email.lower() if email else email
 
 
 class CustomPasswordChangeForm(PasswordFieldTextsMixin, PasswordChangeForm):

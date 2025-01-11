@@ -1,4 +1,6 @@
 # Standardní knihovny Pythonu
+import io
+import base64
 import csv
 import json
 import random
@@ -33,10 +35,15 @@ from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 
 # Třetí strany
+import numpy as np
+import pandas as pd
+import matplotlib
+matplotlib.use('Agg')  # Nastavení non-GUI backendu
+import matplotlib.pyplot as plt
 from django_filters.views import FilterView
 
 # Lokální aplikace
-from budgetlog.models import AppUser, Book
+from budgetlog.models import AppUser, Book, Transaction, Category
 from .filters import TransactionFilter
 from .forms import *
 
@@ -384,7 +391,66 @@ class TransactionSummaryMixin:
             )
         ).order_by('-total')
 
-        return category_summaries
+        category_expenses = Category.objects.filter(book=current_book).annotate(
+            total=Coalesce(
+                Sum(
+                    Case(
+                        When(transaction__type='expense', then=F('transaction__amount')),
+                        default=Decimal('0'),
+                        output_field=DecimalField()
+                    ),
+                    filter=Q(transaction__datestamp__year=year, transaction__datestamp__month=month),
+                    output_field=DecimalField()
+                ),
+                Decimal('0')
+            )
+        ).order_by('total')
+
+        # Sestavení seznamů pro data, názvy a barvy
+        data = []
+        labels = []
+        colors = []
+        for category in category_expenses:
+            if category.total > 0:  # Filtrujeme kategorie s nulovou hodnotou
+                data.append(float(category.total))
+                labels.append(category.name)
+                colors.append(category.color)
+
+        return category_summaries, data, labels, colors
+
+
+def generate_pie_chart(data, labels, colors, title="Výdaje podle kategorií"):
+    """
+    Vytvoří koláčový graf na základě poskytnutých dat a vrátí jej jako Base64 kódovaný obrázek.
+
+    Args:
+        data (list): Seznam hodnot reprezentující jednotlivé části koláče.
+        labels (list): Seznam názvů odpovídajících jednotlivým částem.
+        colors (list): Seznam barev odpovídajících jednotlivým částem.
+        title (str): Název grafu.
+
+    Returns:
+        str: Base64 reprezentace obrázku.
+    """
+
+    # Vytvoření grafu
+    fig, ax = plt.subplots(figsize=(6, 6))
+    total = sum(data)
+    explode = [0.2 if (value / total) < 0.05 else 0 for value in data]
+    ax.pie(data, labels=labels, colors=colors, explode=explode, autopct=lambda pct: '' if pct < 5 else f'{pct:.1f}%', startangle=180)  # autopct=lambda p: f'{p:.1f}%\n({p*total/100:.2f})' pro zobrazení konkrétní hodnoty pod x.x%
+    # ax.set_title(title)
+    # ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1))
+
+
+    # Uložení grafu do Base64
+    buf = io.BytesIO()  # Vytváří objekt paměťového bufferu pro uložení obrázku.
+    plt.savefig(buf, format="png")  # Uloží graf do bufferu ve formátu PNG.
+    plt.close(fig)  # Zavře graf, aby se uvolnila paměť.
+    buf.seek(0)  # Posune ukazatel v bufferu na začátek, aby bylo možné data přečíst.
+    image_base64 = base64.b64encode(buf.read()).decode('utf-8')  # Převede obsah bufferu na Base64 a poté dekóduje na číselný řetězec.
+    buf.close()  # Zavře buffer.
+
+    return image_base64
 
 
 class TransactionListView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixin, FilterView, ListView):
@@ -645,8 +711,19 @@ class MonthDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMi
             datestamp__year=year,
             datestamp__month=month
         )
+
+        # Výpočet souhrnů
         total_income, total_expense, total_balance = self.calculate_totals(transactions)
-        category_summaries = self.get_category_summaries(transactions, year=year, month=month)
+        category_summaries, data, labels, colors = self.get_category_summaries(transactions, year=year, month=month)
+
+        # Zpracování dat pro koláčový graf
+        # df = pd.DataFrame(list(category_summaries.values('name', 'total')))
+        # expense_data = df[df['total'] < 0]  # Pouze výdaje
+        # labels = expense_data['name'].tolist()
+        # values = np.abs(expense_data['total']).tolist()  # Absolutní hodnota výdajů
+
+        # Vytvoření grafu
+        expense_pie_chart = generate_pie_chart(data, labels, colors, title="Výdaje podle kategorií")
 
         context.update({
             'year': year,
@@ -656,6 +733,7 @@ class MonthDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMi
             'total_expense': total_expense,
             'total_balance': total_balance,
             'category_summaries': category_summaries,
+            'expense_pie_chart': expense_pie_chart,  # Base64 reprezentace grafu
         })
         return context
 

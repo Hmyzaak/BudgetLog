@@ -47,6 +47,11 @@ class AppUser(AbstractBaseUser):
         """Textová reprezentace uživatele jako jeho mailu."""
         return f"email: {self.email}"
 
+    def save(self, *args, **kwargs):
+        """Před uložením převede e-mail na malá písmena."""
+        self.email = self.email.lower()
+        super().save(*args, **kwargs)
+
     @property
     def is_staff(self):
         """Vrací True, pokud je uživatel administrátor."""
