@@ -11,12 +11,12 @@ import os
 import sys
 
 # Přidej cestu ke svému projektu
-path = '/home/hmyzaak/BudgetLog'
+path = '/home/budgetlog/BudgetLog'
 if path not in sys.path:
     sys.path.append(path)
 
 # Nastav virtuální prostředí
-os.environ['VIRTUAL_ENV'] = '/home/hmyzaak/BudgetLog/venv'
+os.environ['VIRTUAL_ENV'] = '/home/budgetlog/BudgetLog/venv'
 sys.prefix = os.environ['VIRTUAL_ENV']
 
 # Nastav Django settings modul
