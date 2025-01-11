@@ -90,7 +90,7 @@ Aktuálně je aplikace spuštěna v testovacím režimu na stránkách: **https:
 ---
 
 ## Autoři
-**Autor**: JakVoj
+**Autor**: JaVoj (Hmyzaak)
 
 ---
 
