@@ -1,6 +1,7 @@
 # Název aplikace
 *Aplikace pro správu financí s možností zaznamenávání transakcí, správy kategorií a analýzy výdajů.*\
 Aktuálně je aplikace spuštěna v testovacím režimu na stránkách: **https://budgetlog.pythonanywhere.com/**
+...pro demonstraci je možné se přihlásit do demo účtu s emailem "demo@budgetlog.cz" a psw "demoheslo".
 
 ---
 
