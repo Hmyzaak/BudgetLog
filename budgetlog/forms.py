@@ -189,3 +189,11 @@ class CustomPasswordResetForm(PasswordFieldTextsMixin, SetPasswordForm):
         self.fields['new_password1'].help_text = self.get_password_help_text()
         self.fields['new_password2'].label = "Nové heslo pro potvrzení"
         self.fields['new_password2'].help_text = "Zadejte nové heslo pro potvrzení."
+
+
+class TransactionUploadForm(forms.Form):
+    file = forms.FileField(label="CSV soubor", help_text="Nahrajte CSV soubor s transakcemi.")
+    create_missing = forms.BooleanField(
+        required=False, initial=False, label="Vytvořit chybějící kategorie a tagy",
+        help_text="Pokud je zaškrtnuto, chybějící kategorie a tagy budou automaticky vytvořeny."
+    )

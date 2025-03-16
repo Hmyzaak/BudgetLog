@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt
 from django_filters.views import FilterView
 
 # Lokální aplikace
-from budgetlog.models import AppUser, Book, Transaction, Category
+from budgetlog.models import AppUser, Book, Transaction, Category, Tag
 from .filters import TransactionFilter
 from .forms import *
 
@@ -1031,3 +1031,109 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
         messages.success(request, f"{transactions.count()} vybrané/ých transakce/í byly přesunuty do knihy: {new_book.name}.")
         return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+
+class UploadTransactionsView(LoginRequiredMixin, BookContextMixin, TemplateView):
+    """Templát pro stránku s nahráváním csv."""
+
+    template_name = 'budgetlog/upload_transactions.html'
+
+    def get_context_data(self, **kwargs):
+        """Vrátí kontext s formulářem a aktuální knihou."""
+        context = super().get_context_data(**kwargs)  # Zajistí, že se zavolá BookContextMixin
+        context['form'] = TransactionUploadForm()  # Přidá formulář do kontextu
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Zpracování nahrání CSV souboru."""
+        form = TransactionUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = request.FILES['file']
+            create_missing = form.cleaned_data['create_missing']
+            book = self.get_current_book()
+
+            if not book:
+                messages.error(request, "Nebyla vybrána žádná kniha.")
+                return redirect('book-list')
+
+            result = self.upload_transactions_csv(file, book, create_missing)
+            messages.success(request, f"Přidáno {result['added']} transakcí.")
+            if result['skipped']:
+                messages.warning(request, f"Některé řádky byly vynechány: {result['skipped']}")
+
+            return redirect('transaction-list')
+
+        return render(request, self.template_name, {'form': form})
+
+
+    def upload_transactions_csv(self, file, book, create_missing=False):
+        """
+        Funkce pro zpracování nahraného CSV souboru a přidání transakcí do knihy.
+
+        :param file: CSV soubor s daty transakcí.
+        :param book: Instance knihy, do které se mají transakce přidat.
+        :param create_missing: Bool indikující, zda se mají vytvořit chybějící tagy/kategorie.
+        :return: Slovník s informacemi o úspěšně přidaných a vynechaných transakcích.
+        """
+        reader = csv.DictReader(file.read().decode('utf-8-sig').splitlines(), delimiter=';')  # Čtení souboru
+        added = 0
+        skipped = []
+
+        # Načtení všech kategorií a tagů pro knihu, abychom minimalizovali dotazy do DB
+        existing_categories = {c.name.lower(): c for c in book.categories.all()}
+        existing_tags = {t.name.lower(): t for t in book.tag_set.all()}
+
+        for row in reader:
+            try:
+                # Validace a převod dat
+                amount = Decimal(row['amount'])
+                datestamp = row['datestamp']
+                transaction_type = row['type'].lower()
+                category_name = row['category'].strip().lower()
+                tag_names = [tag.strip().lower() for tag in row['tags'].split(',') if tag.strip()]
+
+                # Ověření správnosti typu transakce
+                if transaction_type not in ['income', 'expense']:
+                    skipped.append(f"Neplatný typ transakce v řádku: {row}")
+                    continue
+
+                # Ověření existence kategorie
+                category = existing_categories.get(category_name)
+                if not category:
+                    if create_missing:
+                        category = Category.objects.create(name=category_name, book=book, color='#000000')
+                        existing_categories[category_name] = category
+                    else:
+                        skipped.append(f"Chybějící kategorie: {category_name}")
+                        continue
+
+                # Ověření existence tagů
+                tags = []
+                for tag_name in tag_names:
+                    tag = existing_tags.get(tag_name)
+                    if not tag:
+                        if create_missing:
+                            tag = Tag.objects.create(name=tag_name, book=book, color='#000000')
+                            existing_tags[tag_name] = tag
+                        else:
+                            skipped.append(f"Chybějící tag: {tag_name}")
+                            continue
+                    tags.append(tag)
+
+                # Vytvoření transakce
+                transaction = Transaction.objects.create(
+                    book=book,
+                    amount=amount,
+                    datestamp=datestamp,
+                    category=category,
+                    type=transaction_type,
+                )
+                transaction.tags.set(tags)
+                added += 1
+
+            except Exception as e:
+                skipped.append(f"Chyba v řádku: {row}, Chyba: {str(e)}")
+                continue
+
+        return {"added": added, "skipped": skipped}
+
