@@ -193,6 +193,15 @@ class CustomPasswordResetForm(PasswordFieldTextsMixin, SetPasswordForm):
 
 class TransactionUploadForm(forms.Form):
     file = forms.FileField(label="CSV soubor", help_text="Nahrajte CSV soubor s transakcemi.")
+    """
+    # Výběr separátoru - prozatím zakomentováno a nachystáno (vyřešit čárky)
+    delimiter = forms.ChoiceField(
+        choices=[(";", "Středník (;)"), (",", "Čárka (,)"), ("\t", "Tabulátor (Tab)")],
+        initial=";",
+        label="Oddělovač sloupců",
+        help_text="Vyberte oddělovač použitý ve vašem CSV souboru."
+    )
+    """
     create_missing = forms.BooleanField(
         required=False, initial=False, label="Vytvořit chybějící kategorie a tagy",
         help_text="Pokud je zaškrtnuto, chybějící kategorie a tagy budou automaticky vytvořeny."
