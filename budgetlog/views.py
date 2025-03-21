@@ -2,9 +2,11 @@
 import io
 import base64
 import csv
+import chardet
 import json
 import random
-from datetime import date
+import re
+from datetime import date, datetime
 from decimal import Decimal
 from io import StringIO, TextIOWrapper
 
@@ -43,7 +45,7 @@ import matplotlib.pyplot as plt
 from django_filters.views import FilterView
 
 # Lokální aplikace
-from budgetlog.models import AppUser, Book, Transaction, Category
+from budgetlog.models import AppUser, Book, Transaction, Category, Tag
 from .filters import TransactionFilter
 from .forms import *
 
@@ -1031,3 +1033,264 @@ class BulkTransactionActionView(LoginRequiredMixin, BookContextMixin, View):
 
         messages.success(request, f"{transactions.count()} vybrané/ých transakce/í byly přesunuty do knihy: {new_book.name}.")
         return JsonResponse({'redirect_url': self.get_redirect_url_with_filters(request)})
+
+
+class UploadTransactionsView(LoginRequiredMixin, BookContextMixin, TemplateView):
+    """Templát pro stránku s nahráváním csv."""
+
+    template_name = 'budgetlog/upload_transactions.html'
+
+    def get_context_data(self, **kwargs):
+        """Vrátí kontext s formulářem a aktuální knihou."""
+        context = super().get_context_data(**kwargs)  # Zajistí, že se zavolá BookContextMixin
+        context['form'] = TransactionUploadForm()  # Přidá formulář do kontextu
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Zpracování nahrání CSV souboru."""
+        form = TransactionUploadForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            file = request.FILES['file']
+            create_missing = form.cleaned_data['create_missing']
+            # delimiter = form.cleaned_data["delimiter"]
+            book = self.get_current_book()
+
+            if not book:
+                messages.warning(request, "Nebyla vybrána žádná kniha.")
+                return redirect('book-list')
+
+            result = self.upload_transactions_csv(file, book, create_missing) # doplnit příp. delimiter
+
+            # Kontrola výsledku
+            if "error" in result:
+                messages.warning(request, result["error"])
+
+            if result.get("added", 0) > 0:
+                messages.success(request, f"Přidáno {result['added']} transakcí.")
+
+            if result.get("skipped"):
+                messages.warning(request, f"Některé řádky byly vynechány: {result['skipped']}")
+
+            return redirect('transaction-list')
+
+        return render(request, self.template_name, {'form': form})
+
+    def upload_transactions_csv(self, file, book, create_missing=False, delimiter=";"):
+        """
+        Funkce pro zpracování nahraného CSV souboru a přidání transakcí do knihy.
+
+        :param file: CSV soubor s daty transakcí.
+        :param book: Instance knihy, do které se mají transakce přidat.
+        :param create_missing: Bool indikující, zda se mají vytvořit chybějící tagy/kategorie.
+        :return: Slovník s informacemi o úspěšně přidaných a vynechaných transakcích.
+        """
+        # Mapování názvů sloupců (české i anglické verze)
+        column_mapping = {
+            "částka": "amount",
+            "datum": "datestamp",
+            "typ": "type",
+            "kategorie": "category",
+            "tagy": "tags",
+            "popis": "description",
+
+            "amount": "amount",
+            "datestamp": "datestamp",
+            "type": "type",
+            "category": "category",
+            "tags": "tags",
+            "description": "description"
+        }
+
+        # Detekce kódování a dekódování souboru CSV
+        encoding = detect_encoding(file)  # Nejprve zkusíme detekci
+        print(f"Detekované kódování souboru: {encoding}")
+
+        if not encoding:
+            return {"error": "Nepodařilo se určit kódování souboru. Zkuste soubor uložit v UTF-8."}
+
+            # Pokus o dekódování souboru
+        try:
+            file.seek(0)  # Reset ukazatele souboru
+            content = file.read().decode(encoding)
+        except (UnicodeDecodeError, LookupError):
+            return {"error": f"Nepodařilo se dekódovat soubor v kódování {encoding}. Zkuste soubor uložit v UTF-8."}
+
+        # Odstranění BOM (pokud existuje)
+        content = content.lstrip("\ufeff")
+
+        reader = csv.DictReader(content.splitlines(), delimiter=delimiter)  # Použití vybraného oddělovače
+
+        # Normalizace názvů sloupců
+        normalized_fieldnames = {col.lower().strip(): column_mapping.get(col.lower().strip()) for col in
+                                 reader.fieldnames}
+
+        # Ověření, zda všechny potřebné sloupce existují
+        required_columns = {"amount", "datestamp", "type", "category", "tags"}
+        if not required_columns.issubset(set(normalized_fieldnames.values())):
+            return {"error": "Transakce nenahrány! Soubor neobsahuje všechny požadované sloupce nebo hodnoty nejsou "
+                             "správně odděleny. Zkontrolujte, zda jsou názvy sloupců správné, oddělovač hodnot je "
+                             "středník (;), uložte soubor ve formátu UTF-8 a opět jej nahrajte."}
+
+        added = 0
+        skipped = []
+
+        # Načtení všech kategorií a tagů pro knihu, abychom minimalizovali dotazy do DB
+        existing_categories = {c.name.capitalize(): c for c in book.categories.all()}
+        existing_tags = {t.name.capitalize(): t for t in book.tag_set.all()}
+
+        # Validace a převod dat v souboru
+        for row in reader:
+            try:
+                # Převod klíčů v řádku podle normalizovaných názvů
+                row = {normalized_fieldnames[k.lower().strip()]: v for k, v in row.items() if
+                       k.lower().strip() in normalized_fieldnames}
+
+                # Ověření, že všechny požadované hodnoty nejsou prázdné
+                required_fields = ["amount", "datestamp", "type", "category"]
+                missing_fields = [field for field in required_fields if not row.get(field)]
+
+                if missing_fields:
+                    skipped.append(f"Řádek přeskočen – chybějící hodnoty: {', '.join(missing_fields)} na řádku: {row}")
+                    continue
+
+                # Převod částky na správný formát
+                try:
+                    amount = parse_amount(row["amount"])
+                except ValueError as e:
+                    skipped.append(f"Chybný formát částky v řádku: {row}, Chyba: {str(e)}")
+                    continue
+
+                # Ověření a převod formátu datumu
+                try:
+                    datestamp = parse_date(row["datestamp"])
+                except ValueError as e:
+                    skipped.append(f"Chybný formát data transakce v řádku: {row}, Chyba: {str(e)}")
+                    continue
+
+                transaction_type = row['type'].lower()
+
+                # Ověření správnosti typu transakce
+                if transaction_type not in ['income', 'expense']:
+                    skipped.append(f"Neplatný typ transakce v řádku: {row} (typ musí být 'income' nebo 'expense').")
+                    continue
+
+                category_name = row['category'].strip().capitalize()
+
+                # Ověření existence kategorie
+                category = existing_categories.get(category_name)
+                if not category:
+                    if create_missing:
+                        category = Category.objects.create(name=category_name, book=book, color='#000000')
+                        existing_categories[category_name] = category
+                    else:
+                        skipped.append(f"Chybějící kategorie: {category_name}")
+                        continue
+
+                tag_names = [tag.strip().capitalize() for tag in row['tags'].split(',') if tag.strip()]
+
+                # Ověření existence tagů
+                tags = []
+                for tag_name in tag_names:
+                    tag = existing_tags.get(tag_name)
+                    if not tag:
+                        if create_missing:
+                            tag = Tag.objects.create(name=tag_name, book=book, color='#000000')
+                            existing_tags[tag_name] = tag
+                        else:
+                            skipped.append(f"Chybějící tag: {tag_name}")
+                            continue
+                    tags.append(tag)
+
+                description = row['description'].capitalize()
+
+                # Vytvoření transakce
+                transaction = Transaction.objects.create(
+                    book=book,
+                    amount=amount,
+                    datestamp=datestamp,
+                    category=category,
+                    type=transaction_type,
+                    description=description,
+                )
+                transaction.tags.set(tags)
+                added += 1
+
+            except Exception as e:
+                skipped.append(f"Chyba v řádku: {row}, Chyba: {str(e)}")
+                continue
+
+        return {"added": added, "skipped": skipped}
+
+
+#Pomocné funkce pro kódování a parsování hodnot v CSV souboru
+def detect_encoding(file):
+    """
+    Detekuje kódování souboru na základě prvních několika tisíc bajtů.
+
+    :param file: CSV soubor s daty transakcí.
+    """
+    raw_data = file.read(4096)  # Přečte první blok dat
+    file.seek(0)  # Vrátí ukazatel na začátek souboru
+    result = chardet.detect(raw_data)  # Odhadne kódování
+    return result['encoding'] if result['confidence'] > 0.5 else None  # Pouze pokud je detekce spolehlivá
+
+
+def parse_amount(amount_str):
+    """
+    Převádí zadanou částku na formát s desetinnou tečkou.
+    - Podporuje desetinnou čárku i desetinnou tečku.
+    - Odstraní mezery nebo jiné než číselné znaky kromě čísel, tečky a čárky.
+    """
+    amount_str = amount_str.strip()  # Odstranění mezer na začátku a konci
+    amount_str = re.sub(r"[^\d,.-]", "", amount_str)  # Odstranění nežádoucích znaků (kromě číslic, čárky, tečky, mínusu)
+
+    # Pokud je v čísle čárka i tečka, ignorujeme formát a vyhodíme chybu
+    if "," in amount_str and "." in amount_str:
+        raise ValueError(f"Nejednoznačný formát čísla: {amount_str}")
+
+    # Pokud obsahuje čárku (ale ne tečku), nahradíme ji tečkou
+    """
+    if "," in amount_str:
+        amount_str = amount_str.replace(",", ".")
+    """
+    amount_str = amount_str.replace(",", ".")
+
+    return Decimal(amount_str)
+
+
+def parse_date(date_str):
+    """
+    Pokusí se rozpoznat a převést datum na standardní formát YYYY-MM-DD.
+    Podporované formáty:
+    - 'YYYY-MM-DD'
+    - 'DD.MM.YYYY'
+    """
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
+        try:
+            return datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError(f"Neznámý formát data: {date_str}")
+
+
+# Metoda pro vytvoření a stažení šablony pro CSV
+def download_csv_template(request):
+    """
+    Vygeneruje a poskytne CSV soubor se šablonou pro nahrávání transakcí, správně kódovaný pro Excel.
+    """
+    response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
+    response["Content-Disposition"] = 'attachment; filename="transaction_template.csv"'
+
+    # Použití utf-8-sig pro správné zobrazení diakritiky v Excelu
+    response.write("\ufeff")  # Přidání BOM (Byte Order Mark) pro Excel
+
+    writer = csv.writer(response, delimiter=";")
+    # Záhlaví souboru odpovídající očekávaným sloupcům
+    # writer.writerow(["Částka", "Datum", "Typ", "Kategorie", "Tagy", "Popis"])
+    writer.writerow(["amount", "datestamp", "type", "category", "tags", "description"])
+    # Příkladné řádky
+    writer.writerow(["123.45", "2024-03-15", "expense", "Potraviny", "Výdaj, Oběd", "Příklad transakce"])
+    writer.writerow(["567.89", "15.03.2024", "income", "Plat", "Práce", "Příklad transakce"])
+
+    return response

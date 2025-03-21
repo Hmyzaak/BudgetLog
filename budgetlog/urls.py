@@ -22,6 +22,8 @@ urlpatterns = [
     path('transactions/delete/<int:pk>/', views.TransactionDeleteView.as_view(), name='transaction-delete'),
     path('transaction/<int:pk>/', views.TransactionDetailView.as_view(), name='transaction-detail'),
     path('transactions/bulk-action/', views.BulkTransactionActionView.as_view(), name='bulk-transaction-action'),
+    path('transactions/upload/', views.UploadTransactionsView.as_view(), name='upload-transactions'),
+    path("download-template/", views.download_csv_template, name="download_csv_template"),
 
     # Sekce pro kategorie
     path('categories/', views.CategoryListView.as_view(), name='category-list'),

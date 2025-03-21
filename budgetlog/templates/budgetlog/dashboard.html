@@ -4,6 +4,10 @@
 {% block content %}
 <h1>Souhrnné přehledy</h1>
 
+<h3>Seznam všech transakcí</h3>
+<a href="{% url 'upload-transactions' %}" class="btn btn-primary">Nahrát transakce z CSV souboru</a>
+
+
 <h2>Seznam všech transakcí</h2>
 <a href="{% url 'transaction-list' %}" class="btn btn-primary">Veškeré transakce a filtrování</a>
 

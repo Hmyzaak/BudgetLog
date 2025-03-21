@@ -1,0 +1,23 @@
+{% extends "base_generic.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<h1>Nahrání transakcí ze souboru CSV</h1>
+    <p>Při použití speciálních znaků uložte soubor jako *.CSV UTF-8 s oddělovači.</p>
+    <ul>
+        <li>Soubor musí obsahovat hlavičku s názvy sloupců v určeném pořadí a názvech: "amount;datestamp;type;category;tags;description"</li>
+        <li>Datum provedení transakce (datestamp) musí být uveden ve formátu DD.MM.YYYY nebo YYYY-MM-DD.</li>
+        <li>Typ transakce (type) musí být jedna z hodnot: "expense" nebo "income".</li>
+        <li>Pokud je transakce označena více tagy, musí být jednotlivé tagy uvedeny v jedné hodnotě a odděleny vzájemně čárkou (,).</li>
+    </ul>
+    <p><a href="{% url 'download_csv_template' %}" class="btn btn-secondary">📥 Stáhnout CSV šablonu</a></p>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form|crispy }}
+
+    <button type="submit" class="btn btn-primary">📤 Nahrát CSV soubor</button>
+</form>
+
+{% endblock %}
