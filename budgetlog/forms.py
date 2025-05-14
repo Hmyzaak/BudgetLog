@@ -6,7 +6,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy
 
 # Lokální aplikace
-from budgetlog.models import Transaction, Category, Tag, AppUser
+from budgetlog.models import Transaction, Category, Tag, AppUser, RecurringTransaction
 
 
 class ColoredTagWidget(CheckboxSelectMultiple):
@@ -31,8 +31,8 @@ class ColoredTagWidget(CheckboxSelectMultiple):
         return option
 
 
-class TransactionForm(forms.ModelForm):
-    """Formulář pro přidání a úpravu transakcí."""
+class CommonTransactionForm(forms.ModelForm):
+    """Formulář pro společné pole pro obě transakce (standardní a opakované)."""
 
     tags = forms.ModelMultipleChoiceField(
         queryset=Tag.objects.all(),
@@ -40,6 +40,22 @@ class TransactionForm(forms.ModelForm):
         required=False,
         label="Tagy"
     )
+
+    def __init__(self, *args, **kwargs):
+        self.book = kwargs.pop('book', None)  # Získání knihy z kwargs
+        super().__init__(*args, **kwargs)
+
+        # Aktualizace querysetů pro category a tags pouze pro aktuální knihu
+        if self.book:
+            self.fields['category'].queryset = Category.objects.filter(book=self.book)
+            self.fields['tags'].queryset = Tag.objects.filter(book=self.book)
+        else:
+            self.fields['category'].queryset = Category.objects.none()
+            self.fields['tags'].queryset = Tag.objects.none()
+
+
+class TransactionForm(CommonTransactionForm):
+    """Formulář pro přidání a úpravu standardních transakcí."""
 
     class Meta:
         model = Transaction
@@ -52,16 +68,40 @@ class TransactionForm(forms.ModelForm):
         # Upravuje pomocný text pro pole datestamp
 
     def __init__(self, *args, **kwargs):
-        self.book = kwargs.pop('book', None)  # Získání knihy z kwargs
         super().__init__(*args, **kwargs)
+        # Další inicializace specifické pro standardní transakce, pokud je třeba
 
-        # Aktualizace querysetů pro category a account pouze pro aktuální knihu
-        if self.book:
-            self.fields['category'].queryset = Category.objects.filter(book=self.book)
-            self.fields['tags'].queryset = Tag.objects.filter(book=self.book)
-        else:
-            self.fields['category'].queryset = Category.objects.none()
-            self.fields['tags'].queryset = Tag.objects.none()
+
+class RecurringTransactionForm(CommonTransactionForm):
+    """Formulář pro přidání a úpravu opakovaných transakcí."""
+
+    start_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+                                 required=True, label="Datum zahájení")
+    end_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+                               required=False, label="Datum ukončení", help_text="Volitelné – datum ukončení místo počtu opakování.")
+    repeat_count = forms.IntegerField(min_value=1, required=False, label="Počet opakování",
+                                      help_text="Volitelné – počet opakování místo koncového data.")
+
+    frequency = forms.ChoiceField(choices=RecurringTransaction.FREQUENCY_CHOICES, required=True,
+                                  label="Frekvence")
+    custom_interval_days = forms.IntegerField(min_value=1, required=False, label="Vlastní interval (dny)",
+                                              help_text="Použije se pouze, pokud je frekvence nastavena na 'Vlastní interval (ve dnech)'.")
+
+    last_run = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+                               required=False, label="Datum posledního provedení", help_text="Používá se ke sledování naposledy vygenerované transakce.")
+
+    is_active = forms.BooleanField(required=False, initial=True, label="Aktivní", help_text="Je-li vypnuto, transakce se nebude nadále generovat.")
+
+    class Meta:
+        model = RecurringTransaction
+        fields = ['name', 'amount', 'type', 'category', 'start_date', 'end_date', 'repeat_count', 'frequency',
+                  'custom_interval_days', 'tags', 'description', 'is_active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Další inicializace specifické pro opakované transakce
+        if self.instance.pk:
+            self.fields['last_run'].initial = self.instance.last_run  # Pokud již existuje instance, nastavíme datum posledního provedení.
 
 
 class TransactionFilterForm(forms.Form):

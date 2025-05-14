@@ -1,0 +1,48 @@
+{% extends "base_generic.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<h1>Opakované transakce</h1>
+
+<div class="d-grid gap-2 mb-3 mt-3 d-md-block">
+    <a href="{% url 'recurringtransaction-create' %}" class="btn btn-primary mt-3">Přidat novou opakovanou transakci</a>
+</div>
+
+<h3>Seznam opakovaných transakcí</h3>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Označení</th>
+                <th>Částka</th>
+                <th>Frekvence</th>
+                <th>Naposledy provedeno</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rt in recurringtransactions %}
+            <tr>
+                <td>{{ rt.name }}</td>
+                <td>
+                    {% if rt.adjusted_amount < 0 %}
+                        <span class="text-danger">{{ rt.adjusted_amount }} CZK</span>
+                    {% else %}
+                        <span class="text-success">{{ rt.adjusted_amount }} CZK</span>
+                    {% endif %}
+                </td>
+                <td>{{ rt.get_frequency_display }}</td>
+                <td>{{ rt.last_run|date:"d.m.Y" }}</td>
+                <td class="text-end">
+                    <a href="{% url 'recurringtransaction-update' rt.pk %}" class="btn btn-sm btn-secondary">Upravit</a>
+                    <a href="{% url 'recurringtransaction-delete' rt.pk %}" class="btn btn-sm btn-danger">Smazat</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">Žádné opakované transakce.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

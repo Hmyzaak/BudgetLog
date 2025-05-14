@@ -1294,3 +1294,38 @@ def download_csv_template(request):
     writer.writerow(["567.89", "15.03.2024", "income", "Plat", "Práce", "Příklad transakce"])
 
     return response
+
+
+class RecurringTransactionCreateView(ObjectFormView, CreateView):
+    """View pro vytvoření nové opakované transakce."""
+    model = RecurringTransaction
+    form_class = RecurringTransactionForm
+    template_name = 'budgetlog/object_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['book'] = self.get_current_book()
+        return kwargs
+
+
+class RecurringTransactionListView(LoginRequiredMixin, BookContextMixin, ListView):
+    """Zobrazí seznam opakovaných transakcí."""
+    model = RecurringTransaction
+    context_object_name = 'recurringtransactions'
+    template_name = 'budgetlog/recurringtransaction_list.html'
+    ordering = ['name']
+
+
+class RecurringTransactionUpdateView(ObjectFormView, UpdateView):
+    model = RecurringTransaction
+    form_class = RecurringTransactionForm
+    template_name = 'budgetlog/object_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['book'] = self.get_current_book()
+        return kwargs
+
+
+class RecurringTransactionDeleteView(BookContextMixin, GenericDeleteView):
+    model = RecurringTransaction

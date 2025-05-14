@@ -5,7 +5,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
 # Lokální aplikace
-from .models import AppUser, Book, Tag, Category, Transaction
+from .models import AppUser, Book, Tag, Category, Transaction, RecurringTransaction
 
 
 class UserCreationForm(forms.ModelForm):
@@ -75,6 +75,15 @@ class TransactionAdmin(admin.ModelAdmin):
     list_display = ('amount', 'category', 'datestamp', 'id', 'description', 'type', 'book')
     list_filter = ('type', 'category', 'datestamp', 'book')
     search_fields = ('description', 'category__name', 'type')
+
+
+@admin.register(RecurringTransaction)
+class RecurringTransactionAdmin(admin.ModelAdmin):
+    list_display = ('amount', 'category', 'start_date', 'last_run', 'frequency', 'type', 'is_active')
+    list_filter = ('frequency', 'type', 'book', 'category')
+    search_fields = ('description',)
+    date_hierarchy = 'start_date'
+    ordering = ('-start_date',)
 
 
 @admin.register(AppUser)

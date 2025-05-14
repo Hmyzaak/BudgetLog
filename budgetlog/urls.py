@@ -24,6 +24,10 @@ urlpatterns = [
     path('transactions/bulk-action/', views.BulkTransactionActionView.as_view(), name='bulk-transaction-action'),
     path('transactions/upload/', views.UploadTransactionsView.as_view(), name='upload-transactions'),
     path("download-template/", views.download_csv_template, name="download_csv_template"),
+    path('recurring/', views.RecurringTransactionListView.as_view(), name='recurringtransaction-list'),
+    path('recurring/create/', views.RecurringTransactionCreateView.as_view(), name='recurringtransaction-create'),
+    path('recurring/<int:pk>/update/', views.RecurringTransactionUpdateView.as_view(), name='recurringtransaction-update'),
+    path('recurring/<int:pk>/delete/', views.RecurringTransactionDeleteView.as_view(), name='recurringtransaction-delete'),
 
     # Sekce pro kategorie
     path('categories/', views.CategoryListView.as_view(), name='category-list'),

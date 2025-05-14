@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 # Django importy
 from django.db import models
 from django.utils import timezone
@@ -196,3 +197,65 @@ class Transaction(models.Model):
     property) modelu a ne skutečné pole v databázi. Pokud chceme filtrovat nebo agregovat ve views podle upravených 
     částek, musíme to udělat pomocí amount a přizpůsobit SQL dotaz.
     """
+
+
+class RecurringTransaction(models.Model):
+    """Model reprezentující opakovanou transakci."""
+
+    TYPE_CHOICES = (
+        ('income', 'Příjem'),
+        ('expense', 'Výdaj')
+    )
+
+    FREQUENCY_CHOICES = (
+        ('daily', 'Denně'),
+        ('weekly', 'Týdně'),
+        ('monthly', 'Měsíčně'),
+        ('yearly', 'Ročně'),
+        ('custom', 'Vlastní interval (ve dnech)'),
+    )
+
+    name = models.CharField(max_length=50, verbose_name="Označení opakované transakce",
+                            help_text="Označte trasnsakci.")
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="Kniha")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Částka [CZK]")
+    category = models.ForeignKey(Category, null=True, on_delete=models.SET_NULL, verbose_name="Kategorie")
+    tags = models.ManyToManyField(Tag, blank=True, verbose_name="Tagy", related_name='recurring_transactions')
+    description = models.TextField(null=True, blank=True, default="Opakovaná transakce", verbose_name="Popis")
+    type = models.CharField(max_length=7, choices=TYPE_CHOICES, default='expense', verbose_name="Typ")
+
+    start_date = models.DateField(default=timezone.now, verbose_name="Datum zahájení")
+
+    end_date = models.DateField(null=True, blank=True, verbose_name="Datum ukončení")
+    repeat_count = models.PositiveIntegerField(null=True, blank=True, verbose_name="Počet opakování")
+
+    frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='monthly', verbose_name="Frekvence")
+    custom_interval_days = models.PositiveIntegerField(null=True, blank=True, verbose_name="Vlastní interval (dny)")
+
+    last_run = models.DateField(null=True, blank=True, verbose_name="Datum posledního provedení")
+
+    is_active = models.BooleanField(default=True, verbose_name="Aktivní")
+
+    class Meta:
+        verbose_name = "Opakovaná transakce"
+        verbose_name_plural = "Opakované transakce"
+
+    object_plural_genitiv = "opakovaných transakcí"
+    object_singular_akluzativ = "opakovanou transakci"
+
+    def display_tags(self):
+        """Pomocná funkce pro zobrazení tagů v administraci."""
+        return ', '.join(tag.name for tag in self.tags.all())
+    display_tags.short_description = 'Tagy'
+
+    def __str__(self):
+        """Textová reprezentace modelu pro administraci."""
+        type_display = dict(self.TYPE_CHOICES).get(self.type, self.type)
+        return f"{self.name} - {type_display}: {self.amount} CZK od {self.start_date}"
+
+    @property
+    def adjusted_amount(self):
+        """Vrátí částku s upraveným znaménkem podle typu transakce (výdaj bude záporný)."""
+        if self.type == 'expense':
+            return -self.amount
+        return self.amount

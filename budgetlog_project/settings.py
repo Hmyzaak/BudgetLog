@@ -41,7 +41,19 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.flatpages',
     'django_filters',
+    'django_q',
 ]
+
+Q_CLUSTER = {
+    "name": "BudgetLog",
+    "workers": 4,
+    'recycle': 500,
+    'timeout': 60,
+    'retry': 90,
+    'queue_limit': 50,
+    'bulk': 10,
+    "orm": "default",  # Použití databázového backendu (SQLite) místo Redis
+}
 
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
