@@ -259,3 +259,23 @@ class RecurringTransaction(models.Model):
         if self.type == 'expense':
             return -self.amount
         return self.amount
+
+    def should_generate_on(self, date):
+        if date < self.start_date:
+            return False
+        if self.end_date and date > self.end_date:
+            return False
+
+        delta = (date - self.start_date).days
+
+        if self.frequency == 'daily':
+            return True
+        elif self.frequency == 'weekly':
+            return delta % 7 == 0
+        elif self.frequency == 'monthly':
+            return self.start_date.day == date.day
+        elif self.frequency == 'yearly':
+            return self.start_date.month == date.month and self.start_date.day == date.day
+        elif self.frequency == 'custom' and self.custom_interval_days:
+            return delta % self.custom_interval_days == 0
+        return False

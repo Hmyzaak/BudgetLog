@@ -49,10 +49,19 @@ Q_CLUSTER = {
     "workers": 4,
     'recycle': 500,
     'timeout': 60,
-    'retry': 90,
+    'retry': 120,
     'queue_limit': 50,
     'bulk': 10,
     "orm": "default",  # Použití databázového backendu (SQLite) místo Redis
+    'schedule': [
+        {
+            'func': 'budgetlog.tasks.generate_transactions_from_recurring',
+            'schedule_type': 'D',  # Daily
+            'minutes': 0,          # Ignored for daily
+            'repeats': -1,
+            'next_run': '06:00',   # Spustí se každý den v 6:00 ráno
+        },
+    ]
 }
 
 CRISPY_TEMPLATE_PACK = "bootstrap5"
