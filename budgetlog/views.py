@@ -587,6 +587,7 @@ class ObjectFormView(LoginRequiredMixin, BookContextMixin):
         context = super().get_context_data(**kwargs)
         context['object_singular_akluzativ'] = self.model.object_singular_akluzativ
         context['list_url_name'] = self.get_success_url_with_filters()  # Přidáme uložené filtry do URL
+        context['is_transaction_create'] = (self.model.__name__ == "Transaction")
         return context
 
     def dispatch(self, request, *args, **kwargs):
