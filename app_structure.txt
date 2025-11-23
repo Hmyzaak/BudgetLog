@@ -3,7 +3,9 @@ budgetlog_project/
 ├── db.sqlite3
 ├── manage.py
 ├── README.md
+├── requirements.txt
 ├── budgetlog_project/
+│   ├── .env
 │   ├── __init__.py
 │   ├── asgi.py
 │   ├── settings.py
@@ -16,6 +18,7 @@ budgetlog_project/
     │       └── populate_data.py
     ├── media/
     ├── migrations/
+    │   ├── 0001_initial.py
     │   └── __init__.py
     ├── static/
     │   ├── css/
@@ -24,13 +27,15 @@ budgetlog_project/
     │   ├── js/
     │   │   ├── bootstrap.bundle.min.js
     │   │   ├── bootstrap.min.js
+    │   │   ├── chart_modal.js
     │   │   ├── clear_selected_transactions.js
     │   │   ├── clickable_rows.js
     │   │   ├── filter-toggle.js
     │   │   ├── hamburger_menu.js
     │   │   └── selected_transactions.js
-    │   └── pics/
-    │       └── logo.png
+    │   ├── pics/
+    │   │   └── logo.png
+    │   └── favicon.ico
     ├── templates/
     │   ├── budgetlog/
     │   │   ├── change_password.html
@@ -44,6 +49,7 @@ budgetlog_project/
     │   │   ├── setup_book.html
     │   │   ├── transaction_detail.html
     │   │   ├── transaction_list.html
+    │   │   ├── upload_transactions.html
     │   │   ├── user_form.html
     │   │   └── yearly_detail.html
     │   ├── registration/

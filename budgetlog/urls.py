@@ -2,12 +2,19 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 from . import views
 
+from django.views.generic import RedirectView
+from django.conf import settings
+from django.conf.urls.static import static
+
 """
 Definujeme URL vzory pro všechny naše views.
 Používáme as_view(), abychom převedli třídy views na funkce, které Django může použít pro směrování.
 """
 
 urlpatterns = [
+    # Prohlížeče opakovaně hledaly favicon na rootu a nikoli v šabloně
+    path("favicon.ico", RedirectView.as_view(url=settings.STATIC_URL + "favicon.ico")),
+
     # Sekce pro knihy
     path('books/', views.BookListView.as_view(), name='book-list'),
     path('books/create/', views.BookCreateView.as_view(), name='book-add'),

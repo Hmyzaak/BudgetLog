@@ -10,7 +10,7 @@ class Command(BaseCommand):
     help = 'Generate test data for categories, tags, and transactions for a specific user and book'
 
     def handle(self, *args, **kwargs):
-        book_id = 37
+        book_id = int(input("Zadejte ID knihy, ze které se mají data vymazat: "))
         book = Book.objects.get(id=book_id)
 
         # Smažte všechny transakce
