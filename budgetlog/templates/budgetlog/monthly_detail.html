@@ -47,7 +47,7 @@
     <div class="col-md-6">
         <div class="chart-container">
             <h3>Výdaje podle kategorií</h3>
-            <img src="data:image/png;base64,{{ expense_pie_chart }}" alt="Koláčový graf výdajů">
+            <canvas id="expenseChart"></canvas>
         </div>
     </div>
     <div class="col-md-6">
@@ -108,5 +108,64 @@
         {% endfor %}
     </tbody>
 </table>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('expenseChart');
+        if (!ctx) return;
+
+        const currencyFormatter = new Intl.NumberFormat('cs-CZ', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        const percentFormatter = new Intl.NumberFormat('cs-CZ', {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1
+        });
+
+        const chartData = {{ chart_data|safe }};
+        const total = chartData.reduce((a, b) => a + b, 0);
+
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [{
+                    data: {{ chart_data|safe }},
+                    backgroundColor: {{ chart_colors|safe }},
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].label;
+                            },
+                            label: function(context) {
+                                const value = context.parsed;
+                                const percentage = total > 0
+                                    ? (value / total) * 100
+                                    : 0;
+
+                                return currencyFormatter.format(value) + ' CZK' +
+                                       ' (' + percentFormatter.format(percentage) + ' %)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
 
 {% endblock %}
