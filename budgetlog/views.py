@@ -1,6 +1,5 @@
 # Standardní knihovny Pythonu
 import io
-import base64
 import csv
 import chardet
 import json
@@ -37,11 +36,6 @@ from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 
 # Třetí strany
-import numpy as np
-import pandas as pd
-import matplotlib
-matplotlib.use('Agg')  # Nastavení non-GUI backendu
-import matplotlib.pyplot as plt
 from django_filters.views import FilterView
 
 # Lokální aplikace
@@ -421,40 +415,6 @@ class TransactionSummaryMixin:
         return category_summaries, data, labels, colors
 
 
-def generate_pie_chart(data, labels, colors, title="Výdaje podle kategorií"):
-    """
-    Vytvoří koláčový graf na základě poskytnutých dat a vrátí jej jako Base64 kódovaný obrázek.
-
-    Args:
-        data (list): Seznam hodnot reprezentující jednotlivé části koláče.
-        labels (list): Seznam názvů odpovídajících jednotlivým částem.
-        colors (list): Seznam barev odpovídajících jednotlivým částem.
-        title (str): Název grafu.
-
-    Returns:
-        str: Base64 reprezentace obrázku.
-    """
-
-    # Vytvoření grafu
-    fig, ax = plt.subplots(figsize=(6, 6))
-    total = sum(data)
-    explode = [0.2 if (value / total) < 0.05 else 0 for value in data]
-    ax.pie(data, labels=labels, colors=colors, explode=explode, autopct=lambda pct: '' if pct < 5 else f'{pct:.1f}%', startangle=180)  # autopct=lambda p: f'{p:.1f}%\n({p*total/100:.2f})' pro zobrazení konkrétní hodnoty pod x.x%
-    # ax.set_title(title)
-    # ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1))
-
-
-    # Uložení grafu do Base64
-    buf = io.BytesIO()  # Vytváří objekt paměťového bufferu pro uložení obrázku.
-    plt.savefig(buf, format="png")  # Uloží graf do bufferu ve formátu PNG.
-    plt.close(fig)  # Zavře graf, aby se uvolnila paměť.
-    buf.seek(0)  # Posune ukazatel v bufferu na začátek, aby bylo možné data přečíst.
-    image_base64 = base64.b64encode(buf.read()).decode('utf-8')  # Převede obsah bufferu na Base64 a poté dekóduje na číselný řetězec.
-    buf.close()  # Zavře buffer.
-
-    return image_base64
-
-
 class TransactionListView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMixin, FilterView, ListView):
     """Umožňuje vytvořit a držet data pro filtrování v seznamu transakcí a umožňuje stránkování v těchto seznamech."""
     model = Transaction
@@ -719,15 +679,6 @@ class MonthDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMi
         total_income, total_expense, total_balance = self.calculate_totals(transactions)
         category_summaries, data, labels, colors = self.get_category_summaries(transactions, year=year, month=month)
 
-        # Zpracování dat pro koláčový graf
-        # df = pd.DataFrame(list(category_summaries.values('name', 'total')))
-        # expense_data = df[df['total'] < 0]  # Pouze výdaje
-        # labels = expense_data['name'].tolist()
-        # values = np.abs(expense_data['total']).tolist()  # Absolutní hodnota výdajů
-
-        # Vytvoření grafu
-        expense_pie_chart = generate_pie_chart(data, labels, colors, title="Výdaje podle kategorií")
-
         context.update({
             'year': year,
             'month': month,
@@ -736,7 +687,10 @@ class MonthDetailView(LoginRequiredMixin, BookContextMixin, TransactionSummaryMi
             'total_expense': total_expense,
             'total_balance': total_balance,
             'category_summaries': category_summaries,
-            'expense_pie_chart': expense_pie_chart,  # Base64 reprezentace grafu
+
+            'chart_data': json.dumps(data),
+            'chart_labels': json.dumps(labels),
+            'chart_colors': json.dumps(colors),
         })
         return context
 

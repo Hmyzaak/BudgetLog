@@ -149,6 +149,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return months.map(month => monthNames[month] || month);
         }
 
+        const currencyFormatter = new Intl.NumberFormat('cs-CZ', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
         const chartData = {
             labels: translateMonths(months), // Translate month names to Czech
             datasets: categories.map(category => ({
@@ -179,6 +184,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 },
                 plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].label;
+                            },
+                            label: function(context) {
+                                const value = context.parsed.y;
+                                return currencyFormatter.format(value) + ' CZK';
+                            }
+                        }
+                    },
                     zoom: {
                         zoom: {
                             wheel: {
