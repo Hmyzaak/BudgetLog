@@ -1,0 +1,794 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.0.4 Chrome/138.0.7204.97 Electron/37.2.1 Safari/537.36" version="28.0.4" pages="8">
+  <diagram id="scope" name="00 – Rozsah a přehled">
+    <mxGraphModel dx="1491" dy="929" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;BudgetLog – UML dokumentace&lt;/b&gt;&lt;br&gt;&lt;br&gt;Model aktuálně implementované aplikace&lt;br&gt;Repository: Hmyzaak/BudgetLog · větev main&lt;br&gt;Stav dokumentace: 19. 11. 2026" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=22;align=center;verticalAlign=middle;spacing=12;" parent="1" vertex="1">
+          <mxGeometry x="90" y="70" width="1320" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="v3" value="&lt;b&gt;01 · Use Case&lt;/b&gt;&lt;br&gt;&lt;br&gt;Funkce dostupné návštěvníkovi, přihlášenému uživateli a administrátorovi." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="90" y="300" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="v4" value="&lt;b&gt;02 · Class Diagram&lt;/b&gt;&lt;br&gt;&lt;br&gt;Datové entity a jejich vazby: uživatel, kniha, transakce, kategorie a tag." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="455" y="300" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="v5" value="&lt;b&gt;03 · Activity&lt;/b&gt;&lt;br&gt;&lt;br&gt;Registrace, založení první knihy a aktivace pracovního prostoru." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="820" y="300" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="v6" value="&lt;b&gt;04 · Activity&lt;/b&gt;&lt;br&gt;&lt;br&gt;Import CSV: validace souboru, řádků, kategorií a tagů." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="1185" y="300" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="v7" value="&lt;b&gt;05 · Sequence&lt;/b&gt;&lt;br&gt;&lt;br&gt;Vytvoření transakce přes URL, view, session, formulář a databázi." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="90" y="535" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="v8" value="&lt;b&gt;06 · Sequence&lt;/b&gt;&lt;br&gt;&lt;br&gt;Hromadné operace nad vybranými transakcemi." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="455" y="535" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="v9" value="&lt;b&gt;07 · Component&lt;/b&gt;&lt;br&gt;&lt;br&gt;Komponenty Django aplikace, prezentace, persistence a externí služby." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="820" y="535" width="300" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="v10" value="&lt;b&gt;Důležité vymezení&lt;/b&gt;&lt;br&gt;Book = obecný oddělený pracovní prostor, nikoli bankovní účet.&lt;br&gt;V aktuální verzi se do knihy ukládají příjmy a výdaje, kategorie a tagy." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;align=center;verticalAlign=middle;spacing=8;" parent="1" vertex="1">
+          <mxGeometry x="90" y="745" width="1320" height="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="usecase" name="01 – Use Case">
+    <mxGraphModel dx="969" dy="604" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1120" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v11" value="&lt;b&gt;BudgetLog&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Funkce aktuální verze&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#4d4d4d;strokeWidth=2;verticalAlign=top;align=left;spacingTop=10;spacingLeft=15;fontSize=18;" parent="1" vertex="1">
+          <mxGeometry x="330" y="55" width="1190" height="990" as="geometry" />
+        </mxCell>
+        <mxCell id="v12" value="Návštěvník" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=14;" parent="1" vertex="1">
+          <mxGeometry x="70" y="210" width="120" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="v13" value="Přihlášený&lt;br&gt;uživatel" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=14;" parent="1" vertex="1">
+          <mxGeometry x="70" y="690" width="130" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v14" value="Administrátor" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=14;" parent="1" vertex="1">
+          <mxGeometry x="1510" y="260" width="130" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v15" value="Zaregistrovat účet" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="390" y="130" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v16" value="Přihlásit se" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="390" y="220" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v17" value="Obnovit zapomenuté heslo" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="390" y="310" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v18" value="Spravovat profil, heslo&lt;br&gt;a vlastní účet" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="390" y="400" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v19" value="Vytvářet, upravovat&lt;br&gt;a mazat knihy" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="720" y="130" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v20" value="Vybrat aktivní knihu" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="720" y="220" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v21" value="Vytvářet, zobrazovat,&lt;br&gt;upravovat a mazat transakce" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="720" y="310" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v22" value="Spravovat kategorie&lt;br&gt;a tagy" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="720" y="400" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v23" value="Filtrovat a stránkovat&lt;br&gt;seznam transakcí" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="130" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v24" value="Zobrazit souhrny&lt;br&gt;a statistické přehledy" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="220" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v25" value="Provádět hromadné operace" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="310" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v26" value="Importovat CSV / stáhnout&lt;br&gt;šablonu / exportovat CSV" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="400" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="v27" value="Spravovat záznamy&lt;br&gt;v Django administraci" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="560" width="260" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v12" target="v15" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="360" y="260" />
+              <mxPoint x="360" y="162" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e29" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v12" target="v16" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="260" />
+              <mxPoint x="240" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e30" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v12" target="v17" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="360" y="260" />
+              <mxPoint x="360" y="342" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e31" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v13" target="v18" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e32" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v13" target="v19" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="700" y="740" />
+              <mxPoint x="700" y="162" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e33" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v13" target="v20" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1010" y="740" />
+              <mxPoint x="1010" y="252" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e34" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v13" target="v21" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="710" y="740" />
+              <mxPoint x="710" y="342" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e35" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v13" target="v22" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e36" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;jumpStyle=arc;" parent="1" source="v13" target="v23" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1360" y="740" />
+              <mxPoint x="1360" y="162" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e37" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;jumpStyle=arc;" parent="1" source="v13" target="v24" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1340" y="740" />
+              <mxPoint x="1340" y="252" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e38" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v13" target="v25" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1030" y="740" />
+              <mxPoint x="1030" y="342" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e39" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;" parent="1" source="v13" target="v26" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1040" y="740" />
+              <mxPoint x="1040" y="432" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e40" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=1.2;jumpStyle=arc;" parent="1" source="v14" target="v27" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1575" y="592" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v41" value="&lt;b&gt;Poznámka&lt;/b&gt;&lt;br&gt;Uživatelské operace s transakcemi a klasifikačními prvky pracují v kontextu aktivní knihy. Přesun mezi knihami je samostatná hromadná operace." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;spacing=8;" parent="1" vertex="1">
+          <mxGeometry x="400" y="820" width="1000" height="115" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="classdiagram" name="02 – Class Diagram">
+    <mxGraphModel dx="1292" dy="805" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1650" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v42" value="&lt;div style=&quot;font-size:16px;font-weight:bold;text-align:center&quot;&gt;AppUser&lt;/div&gt;&lt;div style=&quot;font-size:11px;text-align:center;color:#666&quot;&gt;extends AbstractBaseUser&lt;/div&gt;&lt;hr/&gt;&lt;div style=&quot;font-size:12px;line-height:1.4&quot;&gt;&lt;b&gt;+ email: EmailField&lt;/b&gt;&lt;br&gt;+ password: inherited&lt;br&gt;+ is_admin: bool&lt;br&gt;+ is_active: bool&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=left;verticalAlign=top;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="150" y="100" width="160" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="v43" value="&lt;div style=&quot;font-size:16px;font-weight:bold;text-align:center&quot;&gt;Book&lt;/div&gt;&lt;div style=&quot;font-size:11px;text-align:center;color:#666&quot;&gt;Unique(name, owner) · obecný pracovní prostor&lt;/div&gt;&lt;hr/&gt;&lt;div style=&quot;font-size:12px;line-height:1.4&quot;&gt;+ id: int&lt;br&gt;+ name: str&lt;br&gt;+ description: text [0..1]&lt;br&gt;+ owner: AppUser&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;align=left;verticalAlign=top;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="520" y="100" width="260" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="v44" value="&lt;div style=&quot;font-size:16px;font-weight:bold;text-align:center&quot;&gt;Category&lt;/div&gt;&lt;div style=&quot;font-size:11px;text-align:center;color:#666&quot;&gt;Unique(name, book)&lt;/div&gt;&lt;hr/&gt;&lt;div style=&quot;font-size:12px;line-height:1.4&quot;&gt;+ id: int&lt;br&gt;+ name: str&lt;br&gt;+ color: str&lt;br&gt;+ description: text [0..1]&lt;br&gt;+ is_default: bool&lt;br&gt;+ book: Book&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=left;verticalAlign=top;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="950" y="100" width="180" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="v45" value="&lt;div style=&quot;font-size:16px;font-weight:bold;text-align:center&quot;&gt;Tag&lt;/div&gt;&lt;div style=&quot;font-size:11px;text-align:center;color:#666&quot;&gt;Unique(name, book)&lt;/div&gt;&lt;hr/&gt;&lt;div style=&quot;font-size:12px;line-height:1.4&quot;&gt;+ id: int&lt;br&gt;+ name: str&lt;br&gt;+ color: str&lt;br&gt;+ description: text [0..1]&lt;br&gt;+ book: Book&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=left;verticalAlign=top;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="1170" y="100" width="160" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="v46" value="&lt;div style=&quot;font-size:16px;font-weight:bold;text-align:center&quot;&gt;Transaction&lt;/div&gt;&lt;div style=&quot;font-size:11px;text-align:center;color:#666&quot;&gt;Příjem/výdaj; výdaj vrací záporné znaménko&lt;/div&gt;&lt;hr/&gt;&lt;div style=&quot;font-size:12px;line-height:1.4&quot;&gt;+ id: int&lt;br&gt;+ amount: Decimal(10,2)&lt;br&gt;+ type: income | expense&lt;br&gt;+ datestamp: date&lt;br&gt;+ description: text [0..1]&lt;br&gt;+ book: Book&lt;br&gt;+ category: Category [0..1]&lt;br&gt;+ tags: Tag [0..*]&lt;hr/&gt;&lt;b&gt;+ adjusted_amount: Decimal&lt;/b&gt; {property}&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;align=left;verticalAlign=top;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="520" y="410" width="260" height="262.5" as="geometry" />
+        </mxCell>
+        <mxCell id="v47" value="&lt;div style=&quot;font-size:16px;font-weight:bold;text-align:center&quot;&gt;UserManager&lt;/div&gt;&lt;div style=&quot;font-size:11px;text-align:center;color:#666&quot;&gt;Správce AppUser; není samostatná databázová entita&lt;/div&gt;&lt;hr/&gt;&lt;div style=&quot;font-size:12px;line-height:1.4&quot;&gt;+ create_user(email, password)&lt;br&gt;+ create_superuser(email, password)&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=left;verticalAlign=top;spacing=10;" parent="1" vertex="1">
+          <mxGeometry x="80" y="458" width="300" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="e48" value="1  — vlastní —  0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=none;strokeWidth=1.6;fontSize=12;" parent="1" source="v42" target="v43" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e49" value="1  ◆ obsahuje ◆  0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeWidth=1.6;fontSize=12;" parent="1" source="v43" target="v44" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e50" value="1  ◆ obsahuje ◆  0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeWidth=1.6;fontSize=12;" parent="1" source="v43" target="v45" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="50" />
+              <mxPoint x="1250" y="50" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e51" value="1  ◆ obsahuje ◆  0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=diamond;startFill=1;endArrow=none;strokeWidth=1.6;fontSize=12;" parent="1" source="v43" target="v46" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="640" y="350" />
+              <mxPoint x="640" y="350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e52" value="0..1  — klasifikuje —  0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=none;strokeWidth=1.6;fontSize=12;" parent="1" source="v44" target="v46" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1040" y="370" />
+              <mxPoint x="650" y="370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e53" value="0..N  — označuje —  0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=none;strokeWidth=1.6;fontSize=12;" parent="1" source="v45" target="v46" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1250" y="390" />
+              <mxPoint x="660" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e54" value="spravuje" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeWidth=1.2;fontSize=11;" parent="1" source="v47" target="v42" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="v55" value="&lt;b&gt;Doménová pravidla&lt;/b&gt;&lt;br&gt;• Každá kniha má právě jednoho vlastníka.&lt;br&gt;• Název knihy je unikátní v rámci vlastníka.&lt;br&gt;• Kategorie a tag jsou unikátní v rámci knihy.&lt;br&gt;• Při vytvoření knihy vzniká kategorie „Nezařazeno“.&lt;br&gt;• Kategorie u transakce je volitelná; tagy tvoří vazbu M:N." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;spacing=8;" parent="1" vertex="1">
+          <mxGeometry x="890" y="495" width="440" height="177.5" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="activity_onboarding" name="03 – Activity: registrace a kniha">
+    <mxGraphModel dx="1450" dy="1430" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="1430" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v56" value="" style="ellipse;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="690" y="35" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="v57" value="Uživatel vyplní registrační formulář" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="520" y="95" width="370" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="v58" value="Django ověří registrační formulář" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="520" y="195" width="370" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="v59" value="Formulář&lt;br&gt;platný?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="635" y="295" width="140" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v60" value="Zobrazit chyby&lt;br&gt;a znovu vyplnit formulář" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="310" width="260" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="v61" value="Vytvořit AppUser a přihlásit uživatele" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="520" y="435" width="370" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="v62" value="Zobrazit úvodní nastavení knihy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="520" y="545" width="370" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="v63" value="Uživatel zadá název knihy&lt;br&gt;a vybere / doplní kategorie" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="520" y="645" width="370" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="v64" value="Je vybrána&lt;br&gt;alespoň 1&lt;br&gt;kategorie?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="635" y="755" width="140" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="v65" value="Zobrazit upozornění&lt;br&gt;a vrátit se k nastavení" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="775" width="260" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="v66" value="Vytvořit Book s vlastníkem AppUser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="520" y="920" width="370" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="v67" value="post_save signál automaticky vytvoří&lt;br&gt;výchozí kategorii „Nezařazeno“" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1020" width="370" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="v68" value="Uložit current_book_id do session&lt;br&gt;a vytvořit zvolené / vlastní kategorie" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1135" width="370" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="v69" value="Přesměrovat na seznam transakcí" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1245" width="370" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="v70" value="" style="ellipse;shape=doubleEllipse;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="690" y="1350" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="e71" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v56" target="v57">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e72" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v57" target="v58">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e73" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v58" target="v59">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e74" value="ANO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v59" target="v61">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e75" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v61" target="v62">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e76" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v62" target="v63">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e77" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v63" target="v64">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e78" value="ANO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v64" target="v66">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e79" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v66" target="v67">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e80" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v67" target="v68">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e81" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v68" target="v69">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e82" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v69" target="v70">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e83" value="NE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.4;fontSize=12;" edge="1" parent="1" source="v59" target="v60">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e84" value="oprava" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.2;dashed=1;fontSize=11;" edge="1" parent="1" source="v60" target="v57">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e85" value="NE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.4;fontSize=12;" edge="1" parent="1" source="v64" target="v65">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e86" value="doplnit kategorii" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.2;dashed=1;fontSize=11;" edge="1" parent="1" source="v65" target="v63">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="activity_csv" name="04 – Activity: import CSV">
+    <mxGraphModel dx="1500" dy="1370" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="1370" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v87" value="" style="ellipse;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="715" y="35" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="v88" value="Uživatel nahraje CSV soubor&lt;br&gt;a odešle formulář" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="530" y="95" width="400" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="v89" value="Ověřit formulář a načíst aktivní knihu" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="530" y="195" width="400" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="v90" value="Je aktivní&lt;br&gt;kniha?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="660" y="290" width="140" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v91" value="Upozornit uživatele&lt;br&gt;a přesměrovat na knihy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="305" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="v92" value="Detekovat kódování (chardet),&lt;br&gt;dekódovat soubor a odstranit BOM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="530" y="430" width="400" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="v93" value="Načíst CSV se středníkem;&lt;br&gt;normalizovat české / anglické názvy sloupců" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="530" y="535" width="400" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="v94" value="Obsahuje soubor&lt;br&gt;požadované sloupce?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="645" width="140" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="v95" value="Vrátit chybu importu&lt;br&gt;(chybějící / chybné hlavičky)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="665" width="270" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="v96" value="Pro každý řádek ověřit povinné hodnoty,&lt;br&gt;částku, datum a typ transakce" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="530" y="790" width="400" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="v97" value="Existují kategorie&lt;br&gt;a tagy v aktivní knize?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="900" width="140" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="v98" value="Při create_missing vytvořit chybějící položky.&lt;br&gt;Bez této volby: chybějící kategorii přeskočit; chybějící tag vynechat a zaznamenat." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="920" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="v99" value="Vytvořit Transaction a přiřadit tagy;&lt;br&gt;pokračovat dalším řádkem" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="530" y="1050" width="400" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="v100" value="Zobrazit počet přidaných a přeskočených řádků;&lt;br&gt;přesměrovat na seznam transakcí" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="530" y="1160" width="400" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="v101" value="" style="ellipse;shape=doubleEllipse;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="715" y="1270" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="e102" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v87" target="v88">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e103" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v88" target="v89">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e104" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v89" target="v90">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e105" value="ANO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v90" target="v92">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e106" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v92" target="v93">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e107" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v93" target="v94">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e108" value="ANO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v94" target="v96">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e109" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v96" target="v97">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e110" value="ANO / OK" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v97" target="v99">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e111" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v99" target="v100">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e112" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=1.4;" edge="1" parent="1" source="v100" target="v101">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e113" value="NE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.4;fontSize=12;" edge="1" parent="1" source="v90" target="v91">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e114" value="NE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.4;fontSize=12;" edge="1" parent="1" source="v94" target="v95">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e115" value="NE / chybí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.4;fontSize=12;" edge="1" parent="1" source="v97" target="v98">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e116" value="pokračovat podle výsledku validace" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.2;dashed=1;fontSize=11;" edge="1" parent="1" source="v98" target="v99">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="v117" value="&lt;b&gt;Pravidlo importu&lt;/b&gt;&lt;br&gt;Chyba jednoho datového řádku neukončí celý import: řádek se přeskočí a důvod se přidá do souhrnu. Chyba hlavičky nebo dekódování ukončí zpracování souboru." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="1120" width="350" height="125" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="sequence_create" name="05 – Sequence: vytvoření transakce">
+    <mxGraphModel dx="1600" dy="1020" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1020" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v118" value="Prohlížeč" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v119" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="129" y="105" width="2" height="860" as="geometry" />
+        </mxCell>
+        <mxCell id="v120" value="URL router" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="295" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v121" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="379" y="105" width="2" height="860" as="geometry" />
+        </mxCell>
+        <mxCell id="v122" value="TransactionCreateView" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="565" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v123" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="649" y="105" width="2" height="860" as="geometry" />
+        </mxCell>
+        <mxCell id="v124" value="Session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="815" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v125" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="899" y="105" width="2" height="860" as="geometry" />
+        </mxCell>
+        <mxCell id="v126" value="TransactionForm" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1075" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v127" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1159" y="105" width="2" height="860" as="geometry" />
+        </mxCell>
+        <mxCell id="v128" value="SQLite" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1365" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v129" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1449" y="105" width="2" height="860" as="geometry" />
+        </mxCell>
+        <mxCell id="e130" value="GET /transactions/add/" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="150" as="sourcePoint" />
+            <mxPoint x="380" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e131" value="Předání požadavku; ověření přihlášení" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="380" y="205" as="sourcePoint" />
+            <mxPoint x="650" y="205" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e132" value="Načíst current_book_id" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="260" as="sourcePoint" />
+            <mxPoint x="900" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e133" value="Najít Book podle ID a vlastníka" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="900" y="315" as="sourcePoint" />
+            <mxPoint x="1450" y="315" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e134" value="Vrátit aktivní Book" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1450" y="370" as="sourcePoint" />
+            <mxPoint x="650" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e135" value="Vytvořit formulář s parametrem book" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="425" as="sourcePoint" />
+            <mxPoint x="1160" y="425" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e136" value="Načíst kategorie a tagy dané knihy" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1160" y="480" as="sourcePoint" />
+            <mxPoint x="1450" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e137" value="Vrátit queryset kategorií a tagů" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1450" y="535" as="sourcePoint" />
+            <mxPoint x="1160" y="535" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e138" value="Vykreslit formulář" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="590" as="sourcePoint" />
+            <mxPoint x="130" y="590" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e139" value="POST /transactions/add/ + data formuláře" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="650" as="sourcePoint" />
+            <mxPoint x="380" y="650" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e140" value="Předání požadavku" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="380" y="705" as="sourcePoint" />
+            <mxPoint x="650" y="705" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e141" value="Navázat data a ověřit formulář" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="760" as="sourcePoint" />
+            <mxPoint x="1160" y="760" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e142" value="Vrátit výsledek validace" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1160" y="815" as="sourcePoint" />
+            <mxPoint x="650" y="815" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e143" value="Uložit Transaction s book = aktivní Book" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="870" as="sourcePoint" />
+            <mxPoint x="1450" y="870" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e144" value="Potvrdit uložení" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1450" y="925" as="sourcePoint" />
+            <mxPoint x="650" y="925" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e145" value="Redirect → seznam transakcí" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="975" as="sourcePoint" />
+            <mxPoint x="130" y="975" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v146" value="&lt;b&gt;Větev při chybné validaci&lt;/b&gt;&lt;br&gt;Pokud formulář není validní, záznam se neuloží a uživateli se znovu zobrazí formulář s chybovými zprávami." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="30" y="835" width="240" height="105" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="sequence_bulk" name="06 – Sequence: hromadné operace">
+    <mxGraphModel dx="1600" dy="1120" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1120" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v147" value="Prohlížeč" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v148" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="129" y="105" width="2" height="960" as="geometry" />
+        </mxCell>
+        <mxCell id="v149" value="BulkActionView" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="335" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v150" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="419" y="105" width="2" height="960" as="geometry" />
+        </mxCell>
+        <mxCell id="v151" value="Session / Book" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="635" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v152" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="719" y="105" width="2" height="960" as="geometry" />
+        </mxCell>
+        <mxCell id="v153" value="SQLite" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="955" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v154" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1039" y="105" width="2" height="960" as="geometry" />
+        </mxCell>
+        <mxCell id="v155" value="Akční metoda" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v156" value="" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#999999;strokeColor=none;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1369" y="105" width="2" height="960" as="geometry" />
+        </mxCell>
+        <mxCell id="e157" value="POST: selected_transactions + action" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="155" as="sourcePoint" />
+            <mxPoint x="420" y="155" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e158" value="Načíst aktivní knihu" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="420" y="220" as="sourcePoint" />
+            <mxPoint x="720" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e159" value="Vyhledat Book podle session ID a uživatele" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="720" y="285" as="sourcePoint" />
+            <mxPoint x="1040" y="285" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e160" value="Vrátit aktivní knihu" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1040" y="350" as="sourcePoint" />
+            <mxPoint x="420" y="350" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e161" value="Načíst Transaction podle zaslaných ID" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="420" y="415" as="sourcePoint" />
+            <mxPoint x="1040" y="415" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e162" value="Vrátit queryset vybraných transakcí" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1040" y="480" as="sourcePoint" />
+            <mxPoint x="420" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e163" value="Vybrat metodu podle action" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="420" y="545" as="sourcePoint" />
+            <mxPoint x="1370" y="545" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e164" value="Provést zvolenou změnu / export" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1370" y="610" as="sourcePoint" />
+            <mxPoint x="1040" y="610" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e165" value="Uložit změny / načíst data" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1040" y="675" as="sourcePoint" />
+            <mxPoint x="1370" y="675" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e166" value="JSON redirect nebo CSV soubor" style="edgeStyle=none;html=1;strokeWidth=1.4;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1370" y="740" as="sourcePoint" />
+            <mxPoint x="130" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v167" value="&lt;b&gt;Možné akce&lt;/b&gt;&lt;br&gt;• assign_tag / remove_tag&lt;br&gt;• change_category&lt;br&gt;• delete&lt;br&gt;• export_csv&lt;br&gt;• move_to_book" style="shape=note;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="825" width="350" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="v168" value="&lt;b&gt;Důležitá implementační poznámka&lt;/b&gt;&lt;br&gt;Aktuální kód sestavuje queryset transakcí z předaných ID bez dodatečného filtru `book=aktivni_kniha`. Před produkčním použitím je vhodné přidat serverovou kontrolu příslušnosti každé vybrané transakce k aktivní knize." style="shape=note;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="430" y="825" width="690" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="v169" value="&lt;b&gt;Přesun do jiné knihy&lt;/b&gt;&lt;br&gt;Cílová kniha se ověřuje podle vlastníka. Kategorie a tagy se v cíli znovu použijí nebo vytvoří; přidá se tag „Přesunuto“." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="825" width="380" height="170" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="component" name="07 – Component Diagram">
+    <mxGraphModel dx="1650" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1650" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v170" value="&lt;b&gt;Webový prohlížeč&lt;/b&gt;&lt;br&gt;HTML · CSS · JavaScript&lt;br&gt;Bootstrap · Chart.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;align=center;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="390" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="v171" value="&lt;b&gt;budgetlog_project&lt;/b&gt;&lt;br&gt;settings.py · root urls.py&lt;br&gt;WSGI / ASGI · middleware&lt;br&gt;auth · session · messages" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;align=center;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="430" y="80" width="330" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="v172" value="&lt;b&gt;budgetlog/urls.py&lt;/b&gt;&lt;br&gt;URL mapování&lt;br&gt;views → endpointy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;align=center;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="430" y="350" width="330" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="v173" value="&lt;b&gt;views.py&lt;/b&gt;&lt;br&gt;CBV / FBV&lt;br&gt;BookContextMixin&lt;br&gt;TransactionSummaryMixin&lt;br&gt;CRUD · CSV · bulk actions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;align=center;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="70" width="360" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="v174" value="&lt;b&gt;forms.py&lt;/b&gt;&lt;br&gt;Formuláře a validace&lt;br&gt;TransactionForm&lt;br&gt;ColoredTagWidget" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=center;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="340" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="v175" value="&lt;b&gt;filters.py&lt;/b&gt;&lt;br&gt;TransactionFilter&lt;br&gt;django-filter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=center;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="340" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="v176" value="&lt;b&gt;models.py&lt;/b&gt;&lt;br&gt;AppUser · Book&lt;br&gt;Transaction · Category · Tag" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;align=center;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="600" width="360" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="v177" value="&lt;b&gt;signals.py&lt;/b&gt; + apps.py&lt;br&gt;post_save Book → výchozí Category&lt;br&gt;pre_delete Category → převod transakcí" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;align=center;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="430" y="625" width="330" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="v178" value="&lt;b&gt;templates/ + static/&lt;/b&gt;&lt;br&gt;Django HTML šablony&lt;br&gt;CSS / JS / obrázky" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;align=center;verticalAlign=middle;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="650" width="250" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="v179" value="&lt;b&gt;SQLite&lt;/b&gt;&lt;br&gt;db.sqlite3&lt;br&gt;ORM persistence" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="650" width="250" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="v180" value="&lt;b&gt;SMTP server&lt;/b&gt;&lt;br&gt;Obnova hesla / e-mail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="90" width="250" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="v181" value="&lt;b&gt;Chart.js CDN&lt;/b&gt;&lt;br&gt;Klientské vykreslení grafů" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="890" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e182" value="HTTP request / response" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v170" target="v172">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e183" value="root include + app routes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v172" target="v171">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e184" value="route → view" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v172" target="v173">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e185" value="form handling" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v173" target="v174">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e186" value="filtering" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v173" target="v175">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e187" value="ORM queries / writes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v173" target="v176">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e188" value="SQL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v176" target="v179">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e189" value="model events" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v177" target="v176">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e190" value="rendered HTML + static assets" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v178" target="v170">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e191" value="password-reset email" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v173" target="v180">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e192" value="JS library loaded by browser" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.3;fontSize=11;" edge="1" parent="1" source="v181" target="v170">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="v193" value="&lt;b&gt;Konfigurační a provozní poznámky&lt;/b&gt;&lt;br&gt;Proměnné prostředí načítá python-dotenv. Výchozí databází je SQLite. Aplikace je server-rendered Django aplikace; v repository není implementováno REST API. Chart.js se používá na klientské straně pro grafy." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="430" y="875" width="1110" height="115" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
