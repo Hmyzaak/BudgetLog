@@ -4,6 +4,9 @@ from django.urls import reverse
 from budgetlog.models import *
 
 
+"""Nunto upravit celý soubor!"""
+
+
 # Create your tests here.
 def test_user_registration_creates_book(self):
     user = AppUser.objects.create_user(email='testuser@budgetlog.cz', password='password123')
